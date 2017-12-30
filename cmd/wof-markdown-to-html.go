@@ -1,15 +1,12 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	_ "fmt"
-	"github.com/microcosm-cc/bluemonday"
-	"gopkg.in/russross/blackfriday.v2"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 )
 
 func main() {
@@ -27,57 +24,21 @@ func main() {
 		ext := filepath.Ext(abs_path)
 
 		if ext != ".md" {
-		   	log.Printf("%s doesn't look like a Markdown file\n", abs_path)
+			log.Printf("%s doesn't look like a Markdown file\n", abs_path)
 			continue
 		}
 
-		fh, err := os.Open(abs_path)
+		in, err := os.Open(abs_path)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		scanner := bufio.NewScanner(fh)
+		html, err := markdown.ToHTML(in)
 
-		lineno := 0
-		meta := make(map[string]string)
-
-		is_jekyll := false
-
-		post := ""
-
-		for scanner.Scan() {
-
-			lineno += 1
-
-			txt := scanner.Text()
-			ln := strings.Trim(txt, " ")
-
-			if lineno == 1 && txt == "---" {
-				is_jekyll = true
-				continue
-			}
-
-			if is_jekyll && txt == "---" {
-				is_jekyll = false
-				continue
-			}
-
-			if is_jekyll {
-				kv := strings.Split(ln, ":")
-				key := strings.Trim(kv[0], " ")
-				value := strings.Trim(kv[1], " ")
-				meta[key] = value
-				continue
-			}
-
-			post += txt + "\n"
+		if err != nil {
+			log.Fatal(err)
 		}
-
-		body := []byte(post)
-
-		unsafe := blackfriday.Run(body)
-		safe := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 
 		root := filepath.Dir(abs_path)
 		index := filepath.Join(root, "index.html")
@@ -88,8 +49,12 @@ func main() {
 			log.Fatal(err)
 		}
 
-		out.Write(safe)
-		out.Close()
+		defer out.Close()
 
+		_, err = io.Copy(out, html)
+
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }

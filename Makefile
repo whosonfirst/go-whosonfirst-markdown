@@ -7,6 +7,7 @@ prep:
 self:   prep
 	if test -s src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-markdown
+	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r vendor/* src/
 
 rmdeps:
@@ -27,6 +28,7 @@ vendor-deps: rmdeps deps
 
 fmt:
 	go fmt cmd/*.go
+	go fmt *.go
 
 bin: 	rmdeps self
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-to-html cmd/wof-markdown-to-html.go
