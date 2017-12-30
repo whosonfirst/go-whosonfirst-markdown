@@ -68,11 +68,15 @@ func RenderPath(ctx context.Context, path string, input string, output string) e
 			return err
 		}
 
+		if output == "STDOUT" {
+			io.Copy(os.Stdout, html)
+			return nil
+		}
+
 		root := filepath.Dir(abs_path)
 		index := filepath.Join(root, output)
 
-		log.Println("render", index)
-		return nil
+		// log.Println("render", index)
 
 		out, err := atomicfile.New(index, os.FileMode(0644))
 

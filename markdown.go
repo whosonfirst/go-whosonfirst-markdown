@@ -6,6 +6,7 @@ import (
 	"github.com/microcosm-cc/bluemonday"
 	"gopkg.in/russross/blackfriday.v2"
 	"io"
+	_ "log"
 	"strings"
 )
 
@@ -58,7 +59,20 @@ func ToHTML(md io.ReadCloser) (io.ReadCloser, error) {
 
 	body := []byte(post)
 
-	unsafe := blackfriday.Run(body)
+	flags := blackfriday.CommonHTMLFlags
+	flags |= blackfriday.SkipHTML
+	flags |= blackfriday.SkipLinks
+	flags |= blackfriday.SkipImages
+	flags |= blackfriday.CompletePage
+	flags |= blackfriday.UseXHTML
+
+	params := blackfriday.HTMLRendererParameters{
+		Flags: flags,
+	}
+	
+	renderer := blackfriday.NewHTMLRenderer(params)
+	unsafe := blackfriday.Run(body, blackfriday.WithRenderer(renderer))
+
 	safe := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 
 	html := bytes.NewReader(safe)
