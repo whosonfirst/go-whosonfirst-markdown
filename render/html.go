@@ -16,6 +16,8 @@ type Meta struct {
 	Image   string
 	Authors []string
 	Tags    []string
+	Date    string
+	URI     string
 }
 
 type HTMLOptions struct {
@@ -24,6 +26,21 @@ type HTMLOptions struct {
 	Output string
 	Header *template.Template
 	Footer *template.Template
+}
+
+type HTMLHints struct {
+	URI  string
+	Date string
+}
+
+func DefaultHTMLHints() *HTMLHints {
+
+	h := HTMLHints{
+		URI:  "",
+		Date: "",
+	}
+
+	return &h
 }
 
 func DefaultHTMLOptions() *HTMLOptions {
@@ -92,7 +109,7 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 
 func (nopCloser) Close() error { return nil }
 
-func RenderHTML(md io.ReadCloser, opts *HTMLOptions) (io.ReadCloser, error) {
+func RenderHTML(md io.ReadCloser, opts *HTMLOptions, hints *HTMLHints) (io.ReadCloser, error) {
 
 	defer md.Close()
 
@@ -109,6 +126,8 @@ func RenderHTML(md io.ReadCloser, opts *HTMLOptions) (io.ReadCloser, error) {
 		Excerpt: "",
 		Authors: []string{},
 		Tags:    []string{},
+		Date:	 hints.Date,
+		URI:	 hints.URI,
 	}
 
 	s2l := func(s string) []string {
@@ -158,6 +177,8 @@ func RenderHTML(md io.ReadCloser, opts *HTMLOptions) (io.ReadCloser, error) {
 			case "authors":
 				m.Authors = s2l(value)
 			case "tag":
+				m.Tags = s2l(value)
+			case "tags":
 				m.Tags = s2l(value)
 			default:
 				// pass

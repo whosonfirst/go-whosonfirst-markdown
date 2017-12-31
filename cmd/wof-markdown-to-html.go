@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
@@ -12,6 +13,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
@@ -42,6 +45,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 	case <-ctx.Done():
 		return nil
 	default:
+
 		abs_path, err := filepath.Abs(path)
 
 		if err != nil {
@@ -51,7 +55,6 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 		fname := filepath.Base(abs_path)
 
 		if fname != opts.Input {
-			// log.Printf("%s doesn't look like a Markdown file\n", abs_path)
 			return nil
 		}
 
@@ -63,7 +66,31 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 
 		defer in.Close()
 
-		html, err := render.RenderHTML(in, opts)
+		root := filepath.Dir(abs_path)
+		
+		parts := strings.Split(root, "/")
+		count := len(parts)
+
+		yyyy := parts[ (count - 1) - 3 ]
+		mm := parts[ (count - 1) - 2 ]
+		dd := parts[ (count - 1) - 1 ]				
+		post := parts[ (count - 1) ]
+
+		t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
+
+		if err != nil {
+			return err
+		}
+
+		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
+		
+		hints := render.DefaultHTMLHints()
+		hints.Date = t.Format("January 02, 2006")
+		hints.URI = uri
+
+		// log.Println(hints)
+		
+		html, err := render.RenderHTML(in, opts, hints)
 
 		if err != nil {
 			return err
@@ -75,7 +102,6 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 
 		}
 
-		root := filepath.Dir(abs_path)
 		index := filepath.Join(root, opts.Output)
 
 		out, err := atomicfile.New(index, os.FileMode(0644))
@@ -131,7 +157,7 @@ func main() {
 	opts.Mode = *mode
 	opts.Input = *input
 	opts.Output = *output
-
+	
 	if *header != "" {
 
 		t, err := utils.LoadTemplate(*header, "header")

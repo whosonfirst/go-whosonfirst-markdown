@@ -25,7 +25,7 @@
 		<meta property="twitter:card" value="summary" />
 		<meta property="twitter:site" content="@alloftheplaces" />
 		<meta property="twitter:creator" content="@alloftheplaces" />
-		<meta property="twitter:url" content="" />
+		<meta property="twitter:url" content="{{ .URI }}" />
 		<meta property="twitter:title" content="{{ .Title }}" />
 		<meta property="twitter:description" content="{{ .Excerpt }}" />
 		<meta property="twitter:image" content="/id/{{ .Image }}" />
@@ -55,17 +55,20 @@
 		  font-weight: 100;
 		  font-size: .5em;
 		  }
-		  
+
+		  .hey-look {
+		  font-weight: 700;
+		  }
 		</style>
 	</head>
 	<body>
 
 	  {{$lena := len .Authors }}
 	  {{$lent := len .Tags }}
-	  
 	  <h2>
 	    {{ .Title }}
 	    <small>This is a blog post by
-	      {{ range $ia, $a := .Authors }}{{ if gt $lena 1 }}{{if eq $ia 0}}{{else if eq (plus1 $ia) $lena}} and {{else}}, {{end}}{{ end }}<a href="#">{{ $a }}</a>{{ end }}
-	      {{ if gt $lent 0 }} tagged {{ range $it, $t := .Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}<a href="#">{{ $t }}</a>{{ end }}</small>{{ end }}
+	      {{ range $ia, $a := .Authors }}{{ if gt $lena 1 }}{{if eq $ia 0}}{{else if eq (plus1 $ia) $lena}} and {{else}}, {{end}}{{ end }}<span class="hey-look">{{ $a }}</span>{{ end }}
+	      on {{ .Date }} 
+	      {{ if gt $lent 0 }} tagged {{ range $it, $t := .Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}<span class="hey-look">{{ $t }}</span>{{ end }}</small>{{ end }}
 	  </h2>
