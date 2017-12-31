@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"flag"
 	"fmt"
@@ -9,22 +11,30 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
+	"text/template"
 	"time"
 )
 
+type nopCloser struct {
+	io.Reader
+}
+
+func (nopCloser) Close() error { return nil }
+
 func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
-     	lookup := make(map[string]*parser.FrontMatter)
+	lookup := make(map[string]*parser.FrontMatter)
 	dates := make([]string, 0)
 
 	mu := new(sync.Mutex)
-	
+
 	cb := func(path string, info os.FileInfo) error {
 
 		select {
@@ -35,7 +45,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 			if info.IsDir() {
 
 				f := func(p string, i os.FileInfo, e error) error {
-					
+
 					if e != nil {
 						return e
 					}
@@ -58,10 +68,10 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 					if info != nil {
 						return nil
 					}
-					
-				   	return RenderDirectory(ctx, p, opts)
+
+					return RenderDirectory(ctx, p, opts)
 				}
-				
+
 				return filepath.Walk(path, f)
 			}
 
@@ -83,19 +93,19 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 			}
 
 			ymd := t.Format("20060102")
-			
+
 			mu.Lock()
 			dates = append(dates, ymd)
 			lookup[ymd] = fm
 			mu.Unlock()
-			
+
 			return nil
 		}
 	}
 
 	c := crawl.NewCrawler(path)
 	c.CrawlDirectories = true
-	
+
 	err := c.Crawl(cb)
 
 	if err != nil {
@@ -109,26 +119,69 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		posts = append(posts, lookup[ymd])
 	}
 
+	if len(posts) == 0 {
+		return nil
+	}
+
 	return RenderPosts(ctx, path, posts, opts)
 }
 
-func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, opts *render.HTMLOptions) (error) {
+func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, opts *render.HTMLOptions) error {
 
-     select {
-     	    case <- ctx.Done():
+	select {
+	case <-ctx.Done():
 		return nil
-	    default:
+	default:
 
-	    for _, p := range posts {
-	    	log.Println(path, p.Title)
-	    }
-	    }
+		tm := `{{ range $fm := .Posts }}
+	    * **[{{ $fm.Title }}]({{ $fm.URI }})** {{ $fm.Date }}
 
-	    // generate markdown as bytes
-	    // render markdown
-	    // write path + "index.html"
+	    _{{ $fm.Excerpt }}_
 	    
-	    return nil
+	    {{ end }}
+	    `
+
+		t, err := template.New("index").Parse(tm)
+
+		if err != nil {
+			return err
+		}
+
+		type Data struct {
+			Posts []*parser.FrontMatter
+		}
+
+		d := Data{
+			Posts: posts,
+		}
+
+		var b bytes.Buffer
+		wr := bufio.NewWriter(&b)
+
+		err = t.Execute(wr, d)
+
+		if err != nil {
+			return err
+		}
+
+		r := bytes.NewReader(b.Bytes())
+		fh := nopCloser{r}
+
+		p, err := parser.ParseMarkdown(fh)
+
+		if err != nil {
+			return err
+		}
+
+		o, err := render.RenderHTML(p, opts)
+
+		if err != nil {
+			return err
+		}
+
+		io.Copy(os.Stdout, o)
+		return nil
+	}
 }
 
 func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*parser.FrontMatter, error) {
