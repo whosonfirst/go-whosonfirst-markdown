@@ -2,7 +2,7 @@ package render
 
 import (
 	"bytes"
-	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
+	"github.com/whosonfirst/go-whosonfirst-markdown"		
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
 	"io"
@@ -36,7 +36,7 @@ type nopCloser struct {
 
 type WOFRenderer struct {
 	bf     *blackfriday.HTMLRenderer
-	meta   *parser.FrontMatter
+	frontmatter   *markdown.FrontMatter
 	header *template.Template
 	footer *template.Template
 }
@@ -59,7 +59,7 @@ func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := r.header.Execute(w, r.meta)
+	err := r.header.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
@@ -73,7 +73,7 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := r.footer.Execute(w, r.meta)
+	err := r.footer.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
@@ -83,7 +83,7 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 
 func (nopCloser) Close() error { return nil }
 
-func RenderHTML(p *parser.Parsed, opts *HTMLOptions) (io.ReadCloser, error) {
+func RenderHTML(d *markdown.Document, opts *HTMLOptions) (io.ReadCloser, error) {
 
 	flags := blackfriday.CommonHTMLFlags
 	flags |= blackfriday.CompletePage
@@ -97,12 +97,12 @@ func RenderHTML(p *parser.Parsed, opts *HTMLOptions) (io.ReadCloser, error) {
 
 	r := WOFRenderer{
 		bf:     renderer,
-		meta:   p.FrontMatter,
+		frontmatter:   d.FrontMatter,
 		header: opts.Header,
 		footer: opts.Footer,
 	}
 
-	unsafe := blackfriday.Run(p.Body, blackfriday.WithRenderer(&r))
+	unsafe := blackfriday.Run(d.Body, blackfriday.WithRenderer(&r))
 
 	// safe := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 

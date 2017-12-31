@@ -2,24 +2,10 @@ package parser
 
 import (
 	"bufio"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"io"
 	"strings"
 )
-
-type FrontMatter struct {
-	Title   string
-	Excerpt string
-	Image   string
-	Authors []string
-	Tags    []string
-	Date    string
-	URI     string
-}
-
-type Parsed struct {
-	FrontMatter *FrontMatter
-	Body        []byte
-}
 
 func string2list(s string) []string {
 	s = strings.TrimLeft(s, "[")
@@ -35,7 +21,7 @@ func string2list(s string) []string {
 	return l
 }
 
-func ParseMarkdown(md io.ReadCloser) (*Parsed, error) {
+func ParseMarkdown(md io.ReadCloser) (*markdown.Document, error) {
 
 	scanner := bufio.NewScanner(md)
 
@@ -44,7 +30,7 @@ func ParseMarkdown(md io.ReadCloser) (*Parsed, error) {
 
 	post := ""
 
-	fm := FrontMatter{
+	fm := markdown.FrontMatter{
 		Title:   "",
 		Excerpt: "",
 		Authors: []string{},
@@ -101,10 +87,10 @@ func ParseMarkdown(md io.ReadCloser) (*Parsed, error) {
 
 	body := []byte(post)
 
-	p := Parsed{
+	d := markdown.Document{
 		FrontMatter: &fm,
 		Body:        body,
 	}
 
-	return &p, nil
+	return &d, nil
 }

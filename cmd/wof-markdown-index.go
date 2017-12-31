@@ -6,8 +6,8 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	_ "github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown"	
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
@@ -30,7 +30,7 @@ func (nopCloser) Close() error { return nil }
 
 func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
-	lookup := make(map[string]*parser.FrontMatter)
+	lookup := make(map[string]*markdown.FrontMatter)
 	dates := make([]string, 0)
 
 	mu := new(sync.Mutex)
@@ -114,7 +114,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		return nil
 	}
 
-	posts := make([]*parser.FrontMatter, 0)
+	posts := make([]*markdown.FrontMatter, 0)
 	sort.Sort(sort.Reverse(sort.StringSlice(dates)))
 
 	for _, ymd := range dates {
@@ -128,7 +128,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 	return RenderPosts(ctx, path, posts, opts)
 }
 
-func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, opts *render.HTMLOptions) error {
+func RenderPosts(ctx context.Context, root string, posts []*markdown.FrontMatter, opts *render.HTMLOptions) error {
 
 	select {
 	case <-ctx.Done():
@@ -136,9 +136,11 @@ func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, 
 	default:
 
 		tm := `{{ range $fm := .Posts }}
-* **[{{ $fm.Title }}]({{ $fm.URI }})** {{ $fm.Date }}
-_{{ $fm.Excerpt }}_
-	    
+### [{{ $fm.Title }}]({{ $fm.URI }})
+
+> {{ $fm.Excerpt }}
+
+> _{{ $fm.Date }}_
 	    {{ end }}`
 
 		t, err := template.New("index").Parse(tm)
@@ -148,7 +150,7 @@ _{{ $fm.Excerpt }}_
 		}
 
 		type Data struct {
-			Posts []*parser.FrontMatter
+			Posts []*markdown.FrontMatter
 		}
 
 		d := Data{
@@ -173,18 +175,17 @@ _{{ $fm.Excerpt }}_
 			return err
 		}
 
-		o, err := render.RenderHTML(p, opts)
+		html, err := render.RenderHTML(p, opts)
 
 		if err != nil {
 			return err
 		}
 
-		io.Copy(os.Stdout, o)
-		return nil
+		return utils.WriteHTML(html, root, opts)
 	}
 }
 
-func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*parser.FrontMatter, error) {
+func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*markdown.FrontMatter, error) {
 
 	select {
 
