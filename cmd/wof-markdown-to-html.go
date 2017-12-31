@@ -5,12 +5,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -101,31 +99,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return err
 		}
 
-		if opts.Output == "STDOUT" {
-			_, err = io.Copy(os.Stdout, html)
-			return err
-
-		}
-
-		index := filepath.Join(root, opts.Output)
-
-		out, err := atomicfile.New(index, os.FileMode(0644))
-
-		if err != nil {
-			return err
-		}
-
-		defer out.Close()
-
-		_, err = io.Copy(out, html)
-
-		if err != nil {
-			out.Abort()
-			return err
-		}
-
-		log.Printf("wrote %s", index)
-		return nil
+		return utils.WriteHTML(html, root, opts)
 	}
 }
 

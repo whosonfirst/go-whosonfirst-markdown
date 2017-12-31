@@ -44,6 +44,8 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 
 			if info.IsDir() {
 
+				return nil
+
 				f := func(p string, i os.FileInfo, e error) error {
 
 					if e != nil {
@@ -177,7 +179,6 @@ _{{ $fm.Excerpt }}_
 			return err
 		}
 
-		log.Println(path)
 		io.Copy(os.Stdout, o)
 		return nil
 	}
