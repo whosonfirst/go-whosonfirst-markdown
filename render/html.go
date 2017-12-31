@@ -2,7 +2,7 @@ package render
 
 import (
 	"bytes"
-	"github.com/whosonfirst/go-whosonfirst-markdown"		
+	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
 	"io"
@@ -35,10 +35,10 @@ type nopCloser struct {
 }
 
 type WOFRenderer struct {
-	bf     *blackfriday.HTMLRenderer
-	frontmatter   *markdown.FrontMatter
-	header *template.Template
-	footer *template.Template
+	bf          *blackfriday.HTMLRenderer
+	frontmatter *markdown.FrontMatter
+	header      *template.Template
+	footer      *template.Template
 }
 
 func (r *WOFRenderer) RenderNode(w io.Writer, node *blackfriday.Node, entering bool) blackfriday.WalkStatus {
@@ -96,10 +96,10 @@ func RenderHTML(d *markdown.Document, opts *HTMLOptions) (io.ReadCloser, error) 
 	renderer := blackfriday.NewHTMLRenderer(params)
 
 	r := WOFRenderer{
-		bf:     renderer,
-		frontmatter:   d.FrontMatter,
-		header: opts.Header,
-		footer: opts.Footer,
+		bf:          renderer,
+		frontmatter: d.FrontMatter,
+		header:      opts.Header,
+		footer:      opts.Footer,
 	}
 
 	unsafe := blackfriday.Run(d.Body, blackfriday.WithRenderer(&r))
