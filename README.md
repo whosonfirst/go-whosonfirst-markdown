@@ -15,7 +15,7 @@ All of this package's dependencies are bundled with the code in the `vendor` dir
 ## Example
 
 ```
-./bin/wof-markdown-to-html -header templates/whosonfirst/weblog/header.html -footer templates/whosonfirst/weblog/footer.html -mode directory ../whosonfirst-www/content/blog/
+./bin/wof-markdown-to-html -header ../whosonfirst-www/templates/blog/header.html -footer ../whosonfirst-www/templates/blog/footer.html -mode directory ../whosonfirst-www/content/blog/
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/06/24/sf-neighbourhood-updates/index.html
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/02/19/iamhere/index.html
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/04/14/missing-the-point/index.html
