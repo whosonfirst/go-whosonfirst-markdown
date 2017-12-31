@@ -6,14 +6,15 @@ import (
 	"flag"
 	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/render"
+	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 )
 
-func RenderDirectory(ctx context.Context, path string, input string, output string) error {
+func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
 	cb := func(path string, info os.FileInfo) error {
 
@@ -26,7 +27,7 @@ func RenderDirectory(ctx context.Context, path string, input string, output stri
 				return nil
 			}
 
-			return RenderPath(ctx, path, input, output)
+			return RenderPath(ctx, path, opts)
 		}
 	}
 
@@ -34,7 +35,7 @@ func RenderDirectory(ctx context.Context, path string, input string, output stri
 	return c.Crawl(cb)
 }
 
-func RenderPath(ctx context.Context, path string, input string, output string) error {
+func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
 	select {
 
@@ -49,7 +50,7 @@ func RenderPath(ctx context.Context, path string, input string, output string) e
 
 		fname := filepath.Base(abs_path)
 
-		if fname != input {
+		if fname != opts.Input {
 			// log.Printf("%s doesn't look like a Markdown file\n", abs_path)
 			return nil
 		}
@@ -62,21 +63,20 @@ func RenderPath(ctx context.Context, path string, input string, output string) e
 
 		defer in.Close()
 
-		html, err := markdown.ToHTML(in)
+		html, err := render.RenderHTML(in, opts)
 
 		if err != nil {
 			return err
 		}
 
-		if output == "STDOUT" {
-			io.Copy(os.Stdout, html)
-			return nil
+		if opts.Output == "STDOUT" {
+			_, err = io.Copy(os.Stdout, html)
+			return err
+
 		}
 
 		root := filepath.Dir(abs_path)
-		index := filepath.Join(root, output)
-
-		// log.Println("render", index)
+		index := filepath.Join(root, opts.Output)
 
 		out, err := atomicfile.New(index, os.FileMode(0644))
 
@@ -97,19 +97,19 @@ func RenderPath(ctx context.Context, path string, input string, output string) e
 	}
 }
 
-func Render(ctx context.Context, mode string, path string, input string, output string) error {
+func Render(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
 	select {
 	case <-ctx.Done():
 		return nil
 	default:
 
-		switch mode {
+		switch opts.Mode {
 
 		case "files":
-			return RenderPath(ctx, path, input, output)
+			return RenderPath(ctx, path, opts)
 		case "directory":
-			return RenderDirectory(ctx, path, input, output)
+			return RenderDirectory(ctx, path, opts)
 		default:
 			return errors.New("Unknown or invalid mode")
 		}
@@ -119,18 +119,47 @@ func Render(ctx context.Context, mode string, path string, input string, output 
 
 func main() {
 
+	var mode = flag.String("mode", "files", "...")
 	var input = flag.String("input", "index.md", "...")
 	var output = flag.String("output", "index.html", "...")
-	var mode = flag.String("mode", "files", "...")
+	var header = flag.String("header", "", "...")
+	var footer = flag.String("footer", "", "...")
 
 	flag.Parse()
+
+	opts := render.DefaultHTMLOptions()
+	opts.Mode = *mode
+	opts.Input = *input
+	opts.Output = *output
+
+	if *header != "" {
+
+		t, err := utils.LoadTemplate(*header, "header")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		opts.Header = t
+	}
+
+	if *footer != "" {
+
+		t, err := utils.LoadTemplate(*footer, "footer")
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		opts.Footer = t
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	for _, path := range flag.Args() {
 
-		err := Render(ctx, *mode, path, *input, *output)
+		err := Render(ctx, path, opts)
 
 		if err != nil {
 			log.Println(err)

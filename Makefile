@@ -7,6 +7,8 @@ prep:
 self:   prep
 	if test -s src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-markdown
+	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
+	cp -r utils src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r vendor/* src/
 
@@ -30,6 +32,8 @@ vendor-deps: rmdeps deps
 
 fmt:
 	go fmt cmd/*.go
+	go fmt render/*.go
+	go fmt utils/*.go
 	go fmt *.go
 
 bin: 	rmdeps self
