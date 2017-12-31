@@ -7,6 +7,12 @@ import (
 	"strings"
 )
 
+func string2string(s string) string {
+	s = strings.TrimLeft(s, "\"")
+	s = strings.TrimRight(s, "\"")
+	return s
+}
+
 func string2list(s string) []string {
 	s = strings.TrimLeft(s, "[")
 	s = strings.TrimRight(s, "]")
@@ -33,6 +39,7 @@ func ParseMarkdown(md io.ReadCloser) (*markdown.Document, error) {
 	fm := markdown.FrontMatter{
 		Title:   "",
 		Excerpt: "",
+		Image:   "",
 		Authors: []string{},
 		Tags:    []string{},
 		Date:    "",
@@ -64,11 +71,11 @@ func ParseMarkdown(md io.ReadCloser) (*markdown.Document, error) {
 
 			switch key {
 			case "title":
-				fm.Title = value
+				fm.Title = string2string(value)
 			case "excerpt":
-				fm.Excerpt = value
+				fm.Excerpt = string2string(value)
 			case "image":
-				fm.Image = value
+				fm.Image = string2string(value)
 			case "authors":
 				fm.Authors = string2list(value)
 			case "tag":
