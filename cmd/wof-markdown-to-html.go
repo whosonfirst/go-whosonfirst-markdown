@@ -119,6 +119,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return err
 		}
 
+		log.Printf("wrote %s", index)
 		return nil
 	}
 }
@@ -145,11 +146,11 @@ func Render(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
 func main() {
 
-	var mode = flag.String("mode", "files", "...")
-	var input = flag.String("input", "index.md", "...")
-	var output = flag.String("output", "index.html", "...")
-	var header = flag.String("header", "", "...")
-	var footer = flag.String("footer", "", "...")
+	var mode = flag.String("mode", "files", "Valid modes are: files, directory")
+	var input = flag.String("input", "index.md", "What you expect the input Markdown file to be called")
+	var output = flag.String("output", "index.html", "What you expect the output HTML file to be called")
+	var header = flag.String("header", "", "The path to a custom (Go) template to use as header for your HTML output")
+	var footer = flag.String("footer", "", "The path to a custom (Go) template to use as a footer for your HTML output")
 
 	flag.Parse()
 
