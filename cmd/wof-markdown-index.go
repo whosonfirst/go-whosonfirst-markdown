@@ -134,12 +134,10 @@ func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, 
 	default:
 
 		tm := `{{ range $fm := .Posts }}
-	    * **[{{ $fm.Title }}]({{ $fm.URI }})** {{ $fm.Date }}
-
-	    _{{ $fm.Excerpt }}_
+* **[{{ $fm.Title }}]({{ $fm.URI }})** {{ $fm.Date }}
+_{{ $fm.Excerpt }}_
 	    
-	    {{ end }}
-	    `
+	    {{ end }}`
 
 		t, err := template.New("index").Parse(tm)
 
@@ -179,6 +177,7 @@ func RenderPosts(ctx context.Context, path string, posts []*parser.FrontMatter, 
 			return err
 		}
 
+		log.Println(path)
 		io.Copy(os.Stdout, o)
 		return nil
 	}
