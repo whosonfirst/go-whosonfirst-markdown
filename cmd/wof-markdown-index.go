@@ -33,7 +33,36 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		default:
 
 			if info.IsDir() {
-			   	return RenderDirectory(ctx, path, opts)
+
+				f := func(p string, i os.FileInfo, e error) error {
+					
+					if e != nil {
+						return e
+					}
+
+					if !i.IsDir() {
+						return nil
+					}
+
+					if p == path {
+						return nil
+					}
+
+					idx := filepath.Join(p, "index.md")
+					info, err := os.Stat(idx)
+
+					if err != nil && !os.IsNotExist(err) {
+						return err
+					}
+
+					if info != nil {
+						return nil
+					}
+					
+				   	return RenderDirectory(ctx, p, opts)
+				}
+				
+				return filepath.Walk(path, f)
 			}
 
 			fm, err := RenderPath(ctx, path, opts)
@@ -65,6 +94,8 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 	}
 
 	c := crawl.NewCrawler(path)
+	c.CrawlDirectories = true
+	
 	err := c.Crawl(cb)
 
 	if err != nil {
