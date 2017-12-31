@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/facebookgo/atomicfile"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
 	"io"
@@ -67,14 +68,14 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 		defer in.Close()
 
 		root := filepath.Dir(abs_path)
-		
+
 		parts := strings.Split(root, "/")
 		count := len(parts)
 
-		yyyy := parts[ (count - 1) - 3 ]
-		mm := parts[ (count - 1) - 2 ]
-		dd := parts[ (count - 1) - 1 ]				
-		post := parts[ (count - 1) ]
+		yyyy := parts[(count-1)-3]
+		mm := parts[(count-1)-2]
+		dd := parts[(count-1)-1]
+		post := parts[(count - 1)]
 
 		t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
 
@@ -82,15 +83,19 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return err
 		}
 
+		dt := t.Format("January 02, 2006")
 		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
-		
-		hints := render.DefaultHTMLHints()
-		hints.Date = t.Format("January 02, 2006")
-		hints.URI = uri
 
-		// log.Println(hints)
-		
-		html, err := render.RenderHTML(in, opts, hints)
+		parsed, err := parser.ParseMarkdown(in)
+
+		if err != nil {
+			return err
+		}
+
+		parsed.FrontMatter.Date = dt
+		parsed.FrontMatter.URI = uri
+
+		html, err := render.RenderHTML(parsed, opts)
 
 		if err != nil {
 			return err
@@ -158,7 +163,7 @@ func main() {
 	opts.Mode = *mode
 	opts.Input = *input
 	opts.Output = *output
-	
+
 	if *header != "" {
 
 		t, err := utils.LoadTemplate(*header, "header")
