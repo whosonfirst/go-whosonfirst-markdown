@@ -169,13 +169,20 @@ func RenderPosts(ctx context.Context, root string, posts []*markdown.FrontMatter
 		r := bytes.NewReader(b.Bytes())
 		fh := nopCloser{r}
 
-		p, err := parser.ParseMarkdown(fh)
+		p_opts := parser.DefaultParseOptions()
+		fm, buf, err := parser.Parse(fh, p_opts)
 
 		if err != nil {
 			return err
 		}
 
-		html, err := render.RenderHTML(p, opts)
+		doc, err := markdown.NewDocument(fm, buf)
+
+		if err != nil {
+			return err
+		}
+
+		html, err := render.RenderHTML(doc, opts)
 
 		if err != nil {
 			return err
@@ -205,14 +212,6 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*ma
 			return nil, nil
 		}
 
-		in, err := os.Open(abs_path)
-
-		if err != nil {
-			return nil, err
-		}
-
-		defer in.Close()
-
 		root := filepath.Dir(abs_path)
 
 		parts := strings.Split(root, "/")
@@ -232,16 +231,19 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*ma
 		dt := t.Format("January 02, 2006")
 		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
 
-		parsed, err := parser.ParseMarkdown(in)
+		parse_opts := parser.DefaultParseOptions()
+		parse_opts.Body = false
+
+		fm, _, err := parser.ParseFile(abs_path, parse_opts)
 
 		if err != nil {
 			return nil, err
 		}
 
-		parsed.FrontMatter.Date = dt
-		parsed.FrontMatter.URI = uri
+		fm.Date = dt
+		fm.URI = uri
 
-		return parsed.FrontMatter, nil
+		return fm, nil
 	}
 }
 
