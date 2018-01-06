@@ -12,6 +12,10 @@ make bin
 
 All of this package's dependencies are bundled with the code in the `vendor` directory.
 
+## Important
+
+Everything is in flux, right now. Lots of things will change.
+
 ## Example
 
 ```
@@ -78,7 +82,13 @@ Every record in [Who’s On First](https://whosonfirst.mapzen.com/spelunker/), o
 
 ## Tools
 
+### wof-md2html
+
+Render a single Markdown files as HTML.
+
 ### wof-markdown-to-html
+
+_This is a badly named tool and is very specific to the way the WOF blog is set up._
 
 Render one or more Markdown files as HTML.
 

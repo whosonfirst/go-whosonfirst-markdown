@@ -102,7 +102,7 @@ func RenderHTML(d *markdown.Document, opts *HTMLOptions) (io.ReadCloser, error) 
 		footer:      opts.Footer,
 	}
 
-	unsafe := blackfriday.Run(d.Body, blackfriday.WithRenderer(&r))
+	unsafe := blackfriday.Run(d.Body.Bytes(), blackfriday.WithRenderer(&r))
 
 	// safe := bluemonday.UGCPolicy().SanitizeBytes(unsafe)
 

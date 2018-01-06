@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
@@ -84,16 +85,18 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 		dt := t.Format("January 02, 2006")
 		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
 
-		parsed, err := parser.ParseMarkdown(in)
+		parse_opts := parser.DefaultParseOptions()
+		fm, body, err := parser.Parse(in, parse_opts)
 
 		if err != nil {
 			return err
 		}
 
-		parsed.FrontMatter.Date = dt
-		parsed.FrontMatter.URI = uri
+		fm.Date = dt
+		fm.URI = uri
 
-		html, err := render.RenderHTML(parsed, opts)
+		doc, err := markdown.NewDocument(fm, body)
+		html, err := render.RenderHTML(doc, opts)
 
 		if err != nil {
 			return err

@@ -2,8 +2,10 @@ package parser
 
 import (
 	"bufio"
+	"bytes"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"io"
+	"os"
 	"strings"
 )
 
@@ -13,38 +15,45 @@ func string2string(s string) string {
 	return s
 }
 
-func string2list(s string) []string {
-	s = strings.TrimLeft(s, "[")
-	s = strings.TrimRight(s, "]")
-
-	l := make([]string, 0)
-
-	for _, str := range strings.Split(s, ",") {
-		str = strings.Trim(str, " ")
-		l = append(l, str)
-	}
-
-	return l
+type ParseOptions struct {
+	FrontMatter bool
+	Body        bool
 }
 
-func ParseMarkdown(md io.ReadCloser) (*markdown.Document, error) {
+func DefaultParseOptions() *ParseOptions {
+
+	opts := ParseOptions{
+		FrontMatter: true,
+		Body:        true,
+	}
+
+	return &opts
+}
+
+func ParseFile(path string, opts *ParseOptions) (*markdown.FrontMatter, *markdown.Body, error) {
+
+	fh, err := os.Open(path)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	defer fh.Close()
+
+	return Parse(fh, opts)
+}
+
+func Parse(md io.ReadCloser, opts *ParseOptions) (*markdown.FrontMatter, *markdown.Body, error) {
+
+	fm := markdown.EmptyFrontMatter()
+
+	var b bytes.Buffer
+	wr := bufio.NewWriter(&b)
 
 	scanner := bufio.NewScanner(md)
 
 	lineno := 0
 	is_jekyll := false
-
-	post := ""
-
-	fm := markdown.FrontMatter{
-		Title:   "",
-		Excerpt: "",
-		Image:   "",
-		Authors: []string{},
-		Tags:    []string{},
-		Date:    "",
-		URI:     "",
-	}
 
 	for scanner.Scan() {
 
@@ -65,39 +74,80 @@ func ParseMarkdown(md io.ReadCloser) (*markdown.Document, error) {
 
 		if is_jekyll {
 
-			kv := strings.Split(ln, ":")
-			key := strings.Trim(kv[0], " ")
-			value := strings.Trim(kv[1], " ")
+			if opts.FrontMatter {
 
-			switch key {
-			case "title":
-				fm.Title = string2string(value)
-			case "excerpt":
-				fm.Excerpt = string2string(value)
-			case "image":
-				fm.Image = string2string(value)
-			case "authors":
-				fm.Authors = string2list(value)
-			case "tag":
-				fm.Tags = string2list(value)
-			case "tags":
-				fm.Tags = string2list(value)
-			default:
-				// pass
+				kv := strings.Split(ln, ":")
+				key := strings.Trim(kv[0], " ")
+				value := strings.Trim(kv[1], " ")
+
+				switch key {
+				case "authors":
+					fm.Authors = string2list(value)
+				case "category":
+					fm.Category = value
+				case "excerpt":
+					fm.Excerpt = value
+				case "image":
+					fm.Image = value
+				case "layout":
+					fm.Layout = value
+				case "published":
+					fm.Published = string2bool(value)
+				case "tag":
+					fm.Tags = string2list(value)
+				case "tags":
+					fm.Tags = string2list(value)
+				case "title":
+					fm.Title = value
+				default:
+					// pass
+				}
 			}
-
 			continue
 		}
 
-		post += txt + "\n"
+		if opts.Body {
+			wr.WriteString(txt + "\n")
+		}
 	}
 
-	body := []byte(post)
+	wr.Flush()
+	body := markdown.Body{&b}
 
-	d := markdown.Document{
-		FrontMatter: &fm,
-		Body:        body,
+	return fm, &body, nil
+}
+
+func string2list(s string) []string {
+	s = strings.TrimLeft(s, "[")
+	s = strings.TrimRight(s, "]")
+
+	l := make([]string, 0)
+
+	for _, str := range strings.Split(s, ",") {
+		str = strings.Trim(str, " ")
+		l = append(l, str)
 	}
 
-	return &d, nil
+	return l
+}
+
+func string2bool(s string) bool {
+
+	possible := []string{
+		"true",
+		"y",
+		"yes",
+	}
+
+	b := false
+
+	for _, p := range possible {
+
+		if strings.ToLower(s) == p {
+			b = true
+			break
+		}
+	}
+
+	return b
 }
