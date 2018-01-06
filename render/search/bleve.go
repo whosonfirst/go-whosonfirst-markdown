@@ -1,17 +1,18 @@
-package render
+package search
 
 import (
+       "errors"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"gopkg.in/russross/blackfriday.v2"
 	"io"
 )
 
-type BleveDocument struct {
-	Title   string
-	Authors []string
-	Date    string
-	Links   []string
-	Body    string
+type BleveIndexer struct {
+     Indexer
+}
+
+func (i *BleveIndexer) IndexDocument(doc *markdown.Document) (*SearchDocument, error) {
+     return nil, errors.New("Please write me")
 }
 
 type BleveRenderer struct {
