@@ -9,6 +9,7 @@ self:   prep
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-markdown
 	cp -r parser src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
+	cp -r search src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r utils src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r vendor/* src/
@@ -36,11 +37,13 @@ fmt:
 	go fmt cmd/*.go
 	go fmt parser/*.go
 	go fmt render/*.go
+	go fmt search/*.go
 	go fmt utils/*.go
 	go fmt *.go
 
 bin: 	rmdeps self
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-index cmd/wof-markdown-index.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-parse cmd/wof-markdown-parse.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-search cmd/wof-markdown-search.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-md2html cmd/wof-md2html.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-to-html cmd/wof-markdown-to-html.go
