@@ -80,10 +80,10 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 					r.doc.Links[url] = 1
 				}
 
-			} else {
-				// log.Println("TEXT", str_value)
-				r.doc.Body = append(r.doc.Body, str_value)
 			}
+
+			// log.Println("TEXT", str_value)
+			r.doc.Body = append(r.doc.Body, str_value)
 		}
 	case blackfriday.Softbreak:
 		// pass
@@ -110,6 +110,7 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 				r.doc.Links[url] = 1
 			}
 		}
+
 	case blackfriday.Image:
 
 		if entering {
