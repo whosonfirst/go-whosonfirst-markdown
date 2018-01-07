@@ -107,6 +107,20 @@ Usage of ./bin/wof-markdown-to-html:
     	What you expect the output HTML file to be called (default "index.html")
 ```
 
+### wof-markdown-to-search
+
+_This tool will be renamed. Also it is incomplete. Hence the weird results below, but you get the idea..._
+
+```
+./bin/wof-markdown-search -query bummer examples/index.md 
+2018/01/07 18:37:25 INDEX examples/index.md Who's On First, Chapter Two
+2018/01/07 18:37:25 2 matches, showing 1 through 2, took 251.079µs
+    1. debug (0.008869)
+    2. Who's On First, Chapter Two (0.008866)
+```
+
+Currently this uses [Bleve](https://github.com/blevesearch/bleve) under the hood.
+
 ## See also
 
 * github.com/microcosm-cc/bluemonday

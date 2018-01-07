@@ -9,10 +9,12 @@ import (
 )
 
 type Indexer interface {
-	IndexDocument(doc *markdown.Document) (*SearchDocument, error)
+	IndexDocument(*markdown.Document) (*SearchDocument, error)
+	Query(string) (interface{}, error) // not sure what this should really return, re-inflating a SearchDocument seems like overkill
 }
 
 type SearchDocument struct {
+	Id      string
 	Title   string
 	Authors []string
 	Date    string
@@ -31,13 +33,14 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 	images := make(map[string]int)
 
 	search_doc := SearchDocument{
+		Id:      fm.Title, // PLEASE FIX ME
 		Title:   fm.Title,
 		Authors: fm.Authors,
 		Date:    "",
-		Links:   links,
 		Body:    []string{},
 		Code:    []string{},
 		Images:  images,
+		Links:   links,
 	}
 
 	params := blackfriday.HTMLRendererParameters{}
@@ -167,6 +170,5 @@ func (r *SearchRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 }
 
 func (r *SearchRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
-	// write to search index here...
 	return
 }

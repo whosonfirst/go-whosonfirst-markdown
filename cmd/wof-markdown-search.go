@@ -10,7 +10,27 @@ import (
 
 func main() {
 
+	var index = flag.String("index", "bleve", "")
+	var dsn = flag.String("dsn", "index.db", "")
+	var q = flag.String("query", "", "")
+
 	flag.Parse()
+
+	var idx search.Indexer
+
+	switch *index {
+
+	case "bleve":
+		i, err := search.NewBleveIndexer(*dsn)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		idx = i
+	default:
+		log.Fatal("Invalid indexer")
+	}
 
 	opts := parser.DefaultParseOptions()
 
@@ -28,14 +48,23 @@ func main() {
 			log.Fatal(err)
 		}
 
-		s, err := search.NewSearchDocument(doc)
+		search_doc, err := idx.IndexDocument(doc)
 
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		for i, ln := range s.Body {
-			log.Println(i, ln)
+		log.Println("INDEX", path, search_doc.Title)
+	}
+
+	if *q != "" {
+
+		r, err := idx.Query(*q)
+
+		if err != nil {
+			log.Fatal(err)
 		}
+
+		log.Println(r)
 	}
 }
