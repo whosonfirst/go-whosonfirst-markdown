@@ -34,6 +34,8 @@ func main() {
 			log.Fatal(err)
 		}
 
-		log.Println(s)
+		for i, ln := range s.Body {
+			log.Println(i, ln)
+		}
 	}
 }

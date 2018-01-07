@@ -4,7 +4,8 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"gopkg.in/russross/blackfriday.v2"
 	"io"
-	_ "log"
+	"log"
+	"strings"
 )
 
 type Indexer interface {
@@ -15,10 +16,10 @@ type SearchDocument struct {
 	Title   string
 	Authors []string
 	Date    string
-	Links   []string
+	Links   map[string]int
+	Images  map[string]int
 	Body    []string
 	Code    []string
-	Images  []string
 }
 
 func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
@@ -26,14 +27,17 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 	fm := doc.FrontMatter
 	body := doc.Body
 
+	links := make(map[string]int)
+	images := make(map[string]int)
+
 	search_doc := SearchDocument{
 		Title:   fm.Title,
 		Authors: fm.Authors,
 		Date:    "",
-		Links:   []string{},
+		Links:   links,
 		Body:    []string{},
 		Code:    []string{},
-		Images:  []string{},
+		Images:  images,
 	}
 
 	params := blackfriday.HTMLRendererParameters{}
@@ -41,7 +45,7 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 
 	r := SearchRenderer{
 		bf:  renderer,
-		doc: search_doc,
+		doc: &search_doc,
 	}
 
 	blackfriday.Run(body.Bytes(), blackfriday.WithRenderer(&r))
@@ -51,7 +55,7 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 
 type SearchRenderer struct {
 	bf  *blackfriday.HTMLRenderer
-	doc SearchDocument
+	doc *SearchDocument
 }
 
 func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, entering bool) blackfriday.WalkStatus {
@@ -61,12 +65,26 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 	switch node.Type {
 	case blackfriday.Text:
 
-		if node.Parent.Type == blackfriday.Link {
-			r.doc.Links = append(r.doc.Links, str_value)
-		} else {
-			r.doc.Body = append(r.doc.Body, str_value)
-		}
+		str_value = strings.Trim(str_value, " ")
 
+		if str_value != "" {
+
+			if node.Parent.Type == blackfriday.Link {
+
+				url := str_value
+				_, ok := r.doc.Links[url]
+
+				if ok {
+					r.doc.Links[url] += 1
+				} else {
+					r.doc.Links[url] = 1
+				}
+
+			} else {
+				// log.Println("TEXT", str_value)
+				r.doc.Body = append(r.doc.Body, str_value)
+			}
+		}
 	case blackfriday.Softbreak:
 		// pass
 	case blackfriday.Hardbreak:
@@ -78,47 +96,59 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 	case blackfriday.Del:
 		// pass
 	case blackfriday.HTMLSpan:
-		r.doc.Body = append(r.doc.Body, str_value)
+		// pass
 	case blackfriday.Link:
-		str_dest := string(node.LinkData.Destination)
-		r.doc.Links = append(r.doc.Links, str_dest)
+
+		if entering {
+			url := string(node.LinkData.Destination)
+
+			_, ok := r.doc.Links[url]
+
+			if ok {
+				r.doc.Links[url] += 1
+			} else {
+				r.doc.Links[url] = 1
+			}
+		}
 	case blackfriday.Image:
+
+		if entering {
+			href := string(node.LinkData.Destination)
+
+			_, ok := r.doc.Links[href]
+
+			if ok {
+				r.doc.Links[href] += 1
+			} else {
+				r.doc.Links[href] = 1
+			}
+
+		}
 		// pass
 	case blackfriday.Code:
 		r.doc.Code = append(r.doc.Code, str_value)
 	case blackfriday.Document:
 		break
 	case blackfriday.Paragraph:
-		// WHAT - PLEASE FIX ME...
+		// pass
 	case blackfriday.BlockQuote:
-		// WHAT - PLEASE FIX ME...
+		// pass
 	case blackfriday.HTMLBlock:
-		// WHAT - PLEASE FIX ME...
+		// pass
 	case blackfriday.Heading:
-
-		if !entering {
-			// WHAT
-		}
+		// pass
 	case blackfriday.HorizontalRule:
 		// pass
 	case blackfriday.List:
-		// WHAT
+		// pass
 	case blackfriday.Item:
-		// WHAT
+		// pass
 	case blackfriday.CodeBlock:
 		r.doc.Code = append(r.doc.Code, str_value)
 	case blackfriday.Table:
 		// pass
 	case blackfriday.TableCell:
-		if entering {
-
-			if node.Prev == nil {
-				// WHAT
-			}
-
-		} else {
-			// WHAT
-		}
+		// pass
 	case blackfriday.TableHead:
 		// pass
 	case blackfriday.TableBody:
@@ -126,7 +156,7 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 	case blackfriday.TableRow:
 		// pass
 	default:
-		panic("Unknown node type " + node.Type.String())
+		log.Println("Unknown node type " + node.Type.String())
 	}
 	return blackfriday.GoToNext
 }
