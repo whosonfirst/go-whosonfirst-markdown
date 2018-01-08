@@ -14,14 +14,16 @@ type Indexer interface {
 }
 
 type SearchDocument struct {
-	Id      string
-	Title   string
-	Authors []string
-	Date    string
-	Links   map[string]int
-	Images  map[string]int
-	Body    []string
-	Code    []string
+	Id       string
+	Title    string
+	Category string
+	Tags     []string
+	Authors  []string
+	Date     string
+	Links    map[string]int
+	Images   map[string]int
+	Body     []string
+	Code     []string
 }
 
 func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
@@ -33,14 +35,16 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 	images := make(map[string]int)
 
 	search_doc := SearchDocument{
-		Id:      fm.Title, // PLEASE FIX ME
-		Title:   fm.Title,
-		Authors: fm.Authors,
-		Date:    "",
-		Body:    []string{},
-		Code:    []string{},
-		Images:  images,
-		Links:   links,
+		Id:       fm.Permalink,
+		Title:    fm.Title,
+		Category: fm.Category,
+		Tags:     fm.Tags,
+		Authors:  fm.Authors,
+		Date:     "",
+		Body:     []string{},
+		Code:     []string{},
+		Images:   images,
+		Links:    links,
 	}
 
 	params := blackfriday.HTMLRendererParameters{}
