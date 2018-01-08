@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
+	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"log"
 	"os"
 	"path/filepath"
@@ -106,7 +108,14 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return err
 		}
 
-		return utils.WriteHTML(html, root, opts)
+		wr := ctx.Value("writer").(writer.Writer)
+
+		if wr == nil {
+			return errors.New("Can't load writer from context")
+		}
+
+		// FIX ME TO USE RELATIVE PATH
+		return wr.Write(opts.Output, html)
 	}
 }
 
@@ -138,7 +147,16 @@ func main() {
 	var header = flag.String("header", "", "The path to a custom (Go) template to use as header for your HTML output")
 	var footer = flag.String("footer", "", "The path to a custom (Go) template to use as a footer for your HTML output")
 
+	var writers flags.WriterFlags
+	flag.Var(&writers, "writer", "...")
+
 	flag.Parse()
+
+	wr, err := writers.ToWriter()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	opts := render.DefaultHTMLOptions()
 	opts.Mode = *mode
@@ -167,7 +185,10 @@ func main() {
 		opts.Footer = t
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, "writer", wr)
+
+	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	for _, path := range flag.Args() {
