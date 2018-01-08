@@ -3,16 +3,18 @@ package main
 import (
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"log"
 	"os"
 )
 
 func main() {
 
-	// var output = flag.String("output", "", "A path to write rendered Markdown. Default is STDOUT.")
+	var writers flags.WriterFlags
+
+	flag.Var(&writers, "writer", "...")
 
 	flag.Parse()
 
@@ -25,17 +27,7 @@ func main() {
 		log.Fatal("Missing markdown file")
 	}
 
-	writers := make([]writer.Writer, 0)
-
-	stdout, err := writer.NewStdoutWriter()
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	writers = append(writers, stdout)
-
-	wr, err := writer.NewMultiWriter(writers...)
+	wr, err := writers.ToWriter()
 
 	if err != nil {
 		log.Fatal(err)

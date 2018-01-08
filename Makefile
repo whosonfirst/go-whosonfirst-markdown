@@ -7,6 +7,7 @@ prep:
 self:   prep
 	if test -s src; then rm -rf src; fi
 	mkdir -p src/github.com/whosonfirst/go-whosonfirst-markdown
+	cp -r flags src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r jekyll src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r parser src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
@@ -37,6 +38,7 @@ vendor-deps: rmdeps deps
 
 fmt:
 	go fmt cmd/*.go
+	go fmt flags/*.go
 	go fmt jekyll/*.go
 	go fmt parser/*.go
 	go fmt render/*.go
