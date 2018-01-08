@@ -66,6 +66,15 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 
 		defer in.Close()
 
+		parse_opts := parser.DefaultParseOptions()
+		fm, body, err := parser.Parse(in, parse_opts)
+
+		if err != nil {
+			return err
+		}
+
+		// MAKE OPTIONAL...
+
 		root := filepath.Dir(abs_path)
 
 		parts := strings.Split(root, "/")
@@ -85,15 +94,10 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 		dt := t.Format("January 02, 2006")
 		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
 
-		parse_opts := parser.DefaultParseOptions()
-		fm, body, err := parser.Parse(in, parse_opts)
-
-		if err != nil {
-			return err
-		}
-
 		fm.Date = dt
 		fm.Permalink = uri
+
+		// END OF MAKE OPTIONAL...
 
 		doc, err := markdown.NewDocument(fm, body)
 		html, err := render.RenderHTML(doc, opts)

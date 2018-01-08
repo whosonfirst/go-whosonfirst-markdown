@@ -12,6 +12,7 @@ self:   prep
 	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r search src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r utils src/github.com/whosonfirst/go-whosonfirst-markdown/
+	cp -r writer src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r vendor/* src/
 
@@ -41,6 +42,7 @@ fmt:
 	go fmt render/*.go
 	go fmt search/*.go
 	go fmt utils/*.go
+	go fmt writer/*.go
 	go fmt *.go
 
 bin: 	rmdeps self

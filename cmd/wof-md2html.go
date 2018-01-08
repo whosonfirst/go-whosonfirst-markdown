@@ -5,14 +5,14 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"io"
+	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"log"
 	"os"
 )
 
 func main() {
 
-	var output = flag.String("output", "", "A path to write rendered Markdown. Default is STDOUT.")
+	// var output = flag.String("output", "", "A path to write rendered Markdown. Default is STDOUT.")
 
 	flag.Parse()
 
@@ -23,6 +23,22 @@ func main() {
 
 	if len(args) == 0 {
 		log.Fatal("Missing markdown file")
+	}
+
+	writers := make([]writer.Writer, 0)
+
+	stdout, err := writer.NewStdoutWriter()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	writers = append(writers, stdout)
+
+	wr, err := writer.NewMultiWriter(writers...)
+
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	path := args[0]
@@ -45,25 +61,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var wr io.Writer
-
-	if *output == "" {
-		wr = os.Stdout
-	} else {
-		fh, err := os.Create(*output)
-
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		wr = fh
-	}
-
-	_, err = io.Copy(wr, html)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	wr.Write(fm.Permalink, html)
 
 	os.Exit(0)
 }

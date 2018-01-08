@@ -23,7 +23,7 @@ func DefaultHTMLOptions() *HTMLOptions {
 	opts := HTMLOptions{
 		Mode:   "files",
 		Input:  "index.md",
-		Output: "output.md",
+		Output: "index.html",
 		Header: nil,
 		Footer: nil,
 	}
