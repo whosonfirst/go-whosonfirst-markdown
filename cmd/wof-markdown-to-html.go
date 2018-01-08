@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
+	_ "fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
@@ -16,7 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
+	_ "time"
 )
 
 func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
@@ -77,29 +77,29 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 
 		// MAKE OPTIONAL...
 
-		root := filepath.Dir(abs_path)
+		/*
+			root := filepath.Dir(abs_path)
 
-		parts := strings.Split(root, "/")
-		count := len(parts)
+			parts := strings.Split(root, "/")
+			count := len(parts)
 
-		yyyy := parts[(count-1)-3]
-		mm := parts[(count-1)-2]
-		dd := parts[(count-1)-1]
-		post := parts[(count - 1)]
+			yyyy := parts[(count-1)-3]
+			mm := parts[(count-1)-2]
+			dd := parts[(count-1)-1]
+			post := parts[(count - 1)]
 
-		t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
+			t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
 
-		if err != nil {
-			return err
-		}
+			if err != nil {
+				return err
+			}
 
-		dt := t.Format("January 02, 2006")
-		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
+			dt := t.Format("January 02, 2006")
+			uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
 
-		fm.Date = dt
-		fm.Permalink = uri
-
-		// END OF MAKE OPTIONAL...
+			fm.Date = dt
+			fm.Permalink = uri
+		*/
 
 		doc, err := markdown.NewDocument(fm, body)
 		html, err := render.RenderHTML(doc, opts)
@@ -114,8 +114,18 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return errors.New("Can't load writer from context")
 		}
 
-		// FIX ME TO USE RELATIVE PATH
-		return wr.Write(opts.Output, html)
+		out_path := fm.Permalink
+
+		if out_path == "" {
+			abs_root := filepath.Dir(abs_path)
+			out_path = filepath.Join(abs_root, opts.Output)
+		}
+
+		if strings.HasSuffix(out_path, "/") {
+			out_path = filepath.Join(out_path, opts.Output)
+		}
+
+		return wr.Write(out_path, html)
 	}
 }
 

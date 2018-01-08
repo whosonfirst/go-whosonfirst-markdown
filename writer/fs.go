@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type FSWriter struct {
@@ -40,20 +41,27 @@ func NewFSWriter(root string) (Writer, error) {
 
 func (w *FSWriter) Write(path string, fh io.ReadCloser) error {
 
-	out_path := filepath.Join(w.root, path)
+	abs_path, err := filepath.Abs(path)
 
-	out_root := filepath.Dir(out_path)
+	if err != nil {
+		return err
+	}
 
-	_, err := os.Stat(out_root)
+	rel_path := strings.Replace(abs_path, w.root, "", -1)
+	rel_root := filepath.Dir(rel_path)
+
+	_, err = os.Stat(rel_root)
 
 	if os.IsNotExist(err) {
 
-		err = os.MkdirAll(out_root, 0755)
+		err = os.MkdirAll(rel_root, 0755)
 
 		if err != nil {
 			return err
 		}
 	}
+
+	out_path := filepath.Join(w.root, rel_path)
 
 	out, err := atomicfile.New(out_path, os.FileMode(0644))
 
