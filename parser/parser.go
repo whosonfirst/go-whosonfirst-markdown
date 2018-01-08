@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"io"
 	"os"
 	"strings"
@@ -30,7 +31,7 @@ func DefaultParseOptions() *ParseOptions {
 	return &opts
 }
 
-func ParseFile(path string, opts *ParseOptions) (*markdown.FrontMatter, *markdown.Body, error) {
+func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.Body, error) {
 
 	fh, err := os.Open(path)
 
@@ -43,9 +44,9 @@ func ParseFile(path string, opts *ParseOptions) (*markdown.FrontMatter, *markdow
 	return Parse(fh, opts)
 }
 
-func Parse(md io.ReadCloser, opts *ParseOptions) (*markdown.FrontMatter, *markdown.Body, error) {
+func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.Body, error) {
 
-	fm := markdown.EmptyFrontMatter()
+	fm := jekyll.EmptyFrontMatter()
 
 	var b bytes.Buffer
 	wr := bufio.NewWriter(&b)

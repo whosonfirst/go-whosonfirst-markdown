@@ -3,6 +3,7 @@ package render
 import (
 	"bytes"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
 	"io"
@@ -36,7 +37,7 @@ type nopCloser struct {
 
 type WOFRenderer struct {
 	bf          *blackfriday.HTMLRenderer
-	frontmatter *markdown.FrontMatter
+	frontmatter *jekyll.FrontMatter
 	header      *template.Template
 	footer      *template.Template
 }

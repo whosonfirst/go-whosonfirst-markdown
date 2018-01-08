@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
@@ -30,7 +31,7 @@ func (nopCloser) Close() error { return nil }
 
 func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
 
-	lookup := make(map[string]*markdown.FrontMatter)
+	lookup := make(map[string]*jekyll.FrontMatter)
 	dates := make([]string, 0)
 
 	mu := new(sync.Mutex)
@@ -114,7 +115,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		return nil
 	}
 
-	posts := make([]*markdown.FrontMatter, 0)
+	posts := make([]*jekyll.FrontMatter, 0)
 	sort.Sort(sort.Reverse(sort.StringSlice(dates)))
 
 	for _, ymd := range dates {
@@ -128,7 +129,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 	return RenderPosts(ctx, path, posts, opts)
 }
 
-func RenderPosts(ctx context.Context, root string, posts []*markdown.FrontMatter, opts *render.HTMLOptions) error {
+func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, opts *render.HTMLOptions) error {
 
 	select {
 	case <-ctx.Done():
@@ -150,7 +151,7 @@ func RenderPosts(ctx context.Context, root string, posts []*markdown.FrontMatter
 		}
 
 		type Data struct {
-			Posts []*markdown.FrontMatter
+			Posts []*jekyll.FrontMatter
 		}
 
 		d := Data{
@@ -192,7 +193,7 @@ func RenderPosts(ctx context.Context, root string, posts []*markdown.FrontMatter
 	}
 }
 
-func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*markdown.FrontMatter, error) {
+func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
 
 	select {
 
@@ -241,7 +242,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*ma
 		}
 
 		fm.Date = dt
-		fm.URI = uri
+		fm.Permalink = uri
 
 		return fm, nil
 	}

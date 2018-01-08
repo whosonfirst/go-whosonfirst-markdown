@@ -93,7 +93,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 		}
 
 		fm.Date = dt
-		fm.URI = uri
+		fm.Permalink = uri
 
 		doc, err := markdown.NewDocument(fm, body)
 		html, err := render.RenderHTML(doc, opts)
