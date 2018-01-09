@@ -16,7 +16,7 @@ func (b *runContainer16) writeTo(stream io.Writer) (int, error) {
 	binary.LittleEndian.PutUint16(buf[0:], uint16(len(b.iv)))
 	for i, v := range b.iv {
 		binary.LittleEndian.PutUint16(buf[2+i*4:], v.start)
-		binary.LittleEndian.PutUint16(buf[2+2+i*4:], v.last-v.start)
+		binary.LittleEndian.PutUint16(buf[2+2+i*4:], v.length)
 	}
 	return stream.Write(buf)
 }
@@ -70,37 +70,11 @@ func (b *runContainer16) readFrom(stream io.Reader) (int, error) {
 	}
 	nr := int(numRuns)
 	for i := 0; i < nr; i++ {
-		if i > 0 && b.iv[i-1].last >= encRun[i*2] {
-			panic(fmt.Errorf("error: stored runContainer had runs that were not in sorted order!! (b.iv[i-1=%v].last = %v >= encRun[i=%v] = %v)", i-1, b.iv[i-1].last, i, encRun[i*2]))
+		if i > 0 && b.iv[i-1].last() >= encRun[i*2] {
+			panic(fmt.Errorf("error: stored runContainer had runs that were not in sorted order!! (b.iv[i-1=%v].last = %v >= encRun[i=%v] = %v)", i-1, b.iv[i-1].last(), i, encRun[i*2]))
 		}
-		b.iv = append(b.iv, interval16{start: encRun[i*2], last: encRun[i*2] + encRun[i*2+1]})
+		b.iv = append(b.iv, interval16{start: encRun[i*2], length: encRun[i*2+1]})
 		b.card += int64(encRun[i*2+1]) + 1
 	}
 	return 0, err
-}
-
-// Converts a byte slice to a interval16 slice.
-// The function assumes that the slice byte buffer is run container data
-// encoded according to Roaring Format Spec
-func byteSliceAsInterval16Slice(byteSlice []byte) []interval16 {
-	// Since interval16 is currently implemented as a start-last pair
-	// whereas the Roaring Spec Format says the data is serialized as start-length
-	// To compensate for this mismatch we have to copy the slice and re-calculate the values
-
-	if len(byteSlice)%4 != 0 {
-		panic("Slice size should be divisible by 4")
-	}
-
-	encSlice := byteSliceAsUint16Slice(byteSlice)
-
-	intervalSlice := make([]interval16, len(byteSlice)/4)
-
-	for i := range intervalSlice {
-		intervalSlice[i] = interval16{
-			start: encSlice[2*i],
-			last:  encSlice[2*i] + encSlice[i*2+1],
-		}
-	}
-
-	return intervalSlice
 }

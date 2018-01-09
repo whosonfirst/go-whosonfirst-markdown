@@ -22,6 +22,7 @@ func TestFirstLast(t *testing.T) {
 		t.Errorf("bad maximum")
 		t.FailNow()
 	}
+
 	i := 1 << 5
 	for ; i < (1 << 17); i++ {
 		bm.AddInt(i)
@@ -34,7 +35,9 @@ func TestFirstLast(t *testing.T) {
 			t.FailNow()
 		}
 	}
+
 	bm.RunOptimize()
+
 	if 2 != bm.Minimum() {
 		t.Errorf("bad minimum")
 		t.FailNow()
@@ -339,7 +342,7 @@ func TestBitmap(t *testing.T) {
 		rb := NewBitmap()
 		rb2 := NewBitmap()
 		rb.AddRange(0, 1<<16)
-		for i := 0; i < 10; i ++ {
+		for i := 0; i < 10; i++ {
 			rb2.AddInt(i)
 		}
 		So(rb.GetCardinality(), ShouldEqual, 1<<16)

@@ -28,6 +28,8 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
 	@GOPATH=$(GOPATH) go get -u "github.com/blevesearch/bleve"
+	@GOPATH=$(GOPATH) go get -u "github.com/mattn/go-sqlite3"
+	@GOPATH=$(GOPATH) go install "github.com/mattn/go-sqlite3"
 
 vendor-deps: rmdeps deps
 	if test ! -d vendor; then mkdir vendor; fi
