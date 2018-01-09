@@ -125,6 +125,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			out_path = filepath.Join(out_path, opts.Output)
 		}
 
+		log.Println("WRITE", out_path)
 		return wr.Write(out_path, html)
 	}
 }
