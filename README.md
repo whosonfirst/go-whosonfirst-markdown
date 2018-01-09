@@ -19,7 +19,7 @@ Everything is in flux, right now. Lots of things will change.
 ## Example
 
 ```
-./bin/wof-markdown-to-html -header ../whosonfirst-www/templates/blog/header.html -footer ../whosonfirst-www/templates/blog/footer.html -mode directory ../whosonfirst-www/content/blog/
+./bin/wof-md2html -writer fs=../whosonfirst-www/www/blog -header ../whosonfirst-www/templates/blog/header.html -footer ../whosonfirst-www/templates/blog/footer.html -mode directory ../whosonfirst-www/blog/
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/06/24/sf-neighbourhood-updates/index.html
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/02/19/iamhere/index.html
 2017/12/30 17:07:30 wrote /usr/local/mapzen/whosonfirst-www/content/blog/2016/04/14/missing-the-point/index.html
@@ -56,11 +56,8 @@ Everything is in flux, right now. Lots of things will change.
 
 ## Assumptions
 
-0. That your Markdown files have Jekyll-style "front matter"
-1. That you have one Markdown file per directory
-2. That the directory containing the Markdown file is itself contained by nested `YYYY/MM/DD` directories
-3. That everything is contained by a root `blog` directory
-4. That you are publishing everything on the web where `/blog` is an immediate leaf node your domain
+1. That your Markdown files have Jekyll-style "front matter"
+2. That you have one Markdown file per directory
 
 ## What is "front matter"
 
@@ -84,17 +81,11 @@ Every record in [Who’s On First](https://whosonfirst.mapzen.com/spelunker/), o
 
 ### wof-md2html
 
-Render a single Markdown files as HTML.
-
-### wof-markdown-to-html
-
-_This is a badly named tool and is very specific to the way the WOF blog is set up._
-
 Render one or more Markdown files as HTML.
 
 ```
-./bin/wof-markdown-to-html -h
-Usage of ./bin/wof-markdown-to-html:
+./bin/wof-md2html -h
+Usage of ./bin/wof-md2html:
   -footer string
     	The path to a custom (Go) template to use as a footer for your HTML output
   -header string
@@ -105,6 +96,8 @@ Usage of ./bin/wof-markdown-to-html:
     	Valid modes are: files, directory (default "files")
   -output string
     	What you expect the output HTML file to be called (default "index.html")
+  -writer value
+    	One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout
 ```
 
 ### wof-markdown-to-search
