@@ -40,7 +40,8 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 }
 
 func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) error {
-	return RenderPathWithRoot(ctx, path, "", opts)
+	root := filepath.Dir(path)
+	return RenderPathWithRoot(ctx, path, root, opts)
 }
 
 func RenderPathWithRoot(ctx context.Context, path string, root string, opts *render.HTMLOptions) error {
