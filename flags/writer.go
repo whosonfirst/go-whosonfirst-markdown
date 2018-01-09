@@ -31,9 +31,9 @@ func (fl *WriterFlags) Set(value string) error {
 			path := kv[1]
 			wr, err = writer.NewFSWriter(path)
 		}
-
+	case "null":
+		wr, err = writer.NewNullWriter()
 	case "stdout":
-
 		wr, err = writer.NewStdoutWriter()
 	default:
 		err = errors.New("Invalid writer")

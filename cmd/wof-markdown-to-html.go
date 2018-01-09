@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	_ "fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
@@ -19,7 +18,7 @@ import (
 	_ "time"
 )
 
-func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
+func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) error {
 
 	cb := func(path string, info os.FileInfo) error {
 
@@ -32,15 +31,19 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 				return nil
 			}
 
-			return RenderPath(ctx, path, opts)
+			return RenderPathWithRoot(ctx, path, dir, opts)
 		}
 	}
 
-	c := crawl.NewCrawler(path)
+	c := crawl.NewCrawler(dir)
 	return c.Crawl(cb)
 }
 
 func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) error {
+	return RenderPathWithRoot(ctx, path, "", opts)
+}
+
+func RenderPathWithRoot(ctx context.Context, path string, root string, opts *render.HTMLOptions) error {
 
 	select {
 
@@ -75,32 +78,6 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return err
 		}
 
-		// MAKE OPTIONAL...
-
-		/*
-			root := filepath.Dir(abs_path)
-
-			parts := strings.Split(root, "/")
-			count := len(parts)
-
-			yyyy := parts[(count-1)-3]
-			mm := parts[(count-1)-2]
-			dd := parts[(count-1)-1]
-			post := parts[(count - 1)]
-
-			t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
-
-			if err != nil {
-				return err
-			}
-
-			dt := t.Format("January 02, 2006")
-			uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
-
-			fm.Date = dt
-			fm.Permalink = uri
-		*/
-
 		doc, err := markdown.NewDocument(fm, body)
 		html, err := render.RenderHTML(doc, opts)
 
@@ -114,6 +91,9 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			return errors.New("Can't load writer from context")
 		}
 
+		// I don't love that all this logic is here but I am not
+		// sure where else to put it... (20180109/thisisaaronland)
+
 		out_path := fm.Permalink
 
 		if out_path == "" {
@@ -125,7 +105,10 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) erro
 			out_path = filepath.Join(out_path, opts.Output)
 		}
 
-		log.Println("WRITE", out_path)
+		if root != "" {
+			out_path = strings.Replace(out_path, root, "", -1)
+		}
+
 		return wr.Write(out_path, html)
 	}
 }
@@ -137,12 +120,18 @@ func Render(ctx context.Context, path string, opts *render.HTMLOptions) error {
 		return nil
 	default:
 
+		abs_path, err := filepath.Abs(path)
+
+		if err != nil {
+			return err
+		}
+
 		switch opts.Mode {
 
 		case "files":
-			return RenderPath(ctx, path, opts)
+			return RenderPath(ctx, abs_path, opts)
 		case "directory":
-			return RenderDirectory(ctx, path, opts)
+			return RenderDirectory(ctx, abs_path, opts)
 		default:
 			return errors.New("Unknown or invalid mode")
 		}
@@ -159,7 +148,7 @@ func main() {
 	var footer = flag.String("footer", "", "The path to a custom (Go) template to use as a footer for your HTML output")
 
 	var writers flags.WriterFlags
-	flag.Var(&writers, "writer", "...")
+	flag.Var(&writers, "writer", "One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout")
 
 	flag.Parse()
 
