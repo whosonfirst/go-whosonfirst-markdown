@@ -21,7 +21,18 @@ func main() {
 	switch *index {
 
 	case "bleve":
+
 		i, err := search.NewBleveIndexer(*dsn)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		idx = i
+
+	case "sqlite":
+
+		i, err := search.NewSQLiteIndexer(*dsn)
 
 		if err != nil {
 			log.Fatal(err)
