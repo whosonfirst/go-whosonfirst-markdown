@@ -3,9 +3,11 @@ package search
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
-	_ "log"
+	"log"
+	"strings"
 )
 
 type SQLiteIndexer struct {
@@ -55,6 +57,10 @@ func NewSQLiteIndexer(dsn string) (Indexer, error) {
 	}
 
 	if !has_table {
+
+		// this needs a "tags" table but don't bother adding that until
+		// we figure out what do about using or not using go-whosonfirst-sqlite
+		// above (20180110/thisisaaronland)
 
 		schema := `CREATE TABLE documents (
 		       id TEXT PRIMARY KEY,
@@ -118,6 +124,55 @@ func (i *SQLiteIndexer) Query(q string) (interface{}, error) {
 }
 
 func (i *SQLiteIndexer) IndexDocument(doc *markdown.Document) (*SearchDocument, error) {
+
+	search_doc, err := NewSearchDocument(doc)
+
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := i.Conn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	tx, err := conn.Begin()
+
+	if err != nil {
+		return nil, err
+	}
+
+	str_body := strings.Join(search_doc.Body, " ")
+	str_code := strings.Join(search_doc.Code, " ")
+
+	sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents (
+		id, title, category, date, body, code
+	) VALUES (
+		?, ?, ?, ?, ?, ?
+	)`)
+
+	log.Println(sql)
+
+	stmt, err := tx.Prepare(sql)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(search_doc.Id, search_doc.Title, search_doc.Category, search_doc.Date, str_body, str_code)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.Commit()
+
+	if err != nil {
+		return nil, err
+	}
 
 	return nil, errors.New("Please write me")
 }

@@ -11,6 +11,7 @@ import (
 type Indexer interface {
 	IndexDocument(*markdown.Document) (*SearchDocument, error)
 	Query(string) (interface{}, error) // not sure what this should really return, re-inflating a SearchDocument seems like overkill
+	Close() error
 }
 
 type SearchDocument struct {

@@ -46,6 +46,10 @@ func NewBleveIndexer(path string) (Indexer, error) {
 	return &i, err
 }
 
+func (i *BleveIndexer) Close() error {
+	return nil
+}
+
 func (i *BleveIndexer) Query(q string) (interface{}, error) {
 	query := bleve.NewQueryStringQuery(q)
 	req := bleve.NewSearchRequest(query)
