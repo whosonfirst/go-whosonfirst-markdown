@@ -5,6 +5,7 @@ import (
 	"gopkg.in/russross/blackfriday.v2"
 	"io"
 	"log"
+	"net/url"
 	"strings"
 )
 
@@ -21,7 +22,7 @@ type SearchDocument struct {
 	Tags     []string
 	Authors  []string
 	Date     string
-	Links    map[string]int
+	Links    map[string]*url.URL
 	Images   map[string]int
 	Body     []string
 	Code     []string
@@ -32,7 +33,7 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 	fm := doc.FrontMatter
 	body := doc.Body
 
-	links := make(map[string]int)
+	links := make(map[string]*url.URL)
 	images := make(map[string]int)
 
 	search_doc := SearchDocument{
@@ -41,7 +42,7 @@ func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
 		Category: fm.Category,
 		Tags:     fm.Tags,
 		Authors:  fm.Authors,
-		Date:     "",
+		Date:     fm.Date,
 		Body:     []string{},
 		Code:     []string{},
 		Images:   images,
@@ -79,13 +80,11 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 
 			if node.Parent.Type == blackfriday.Link {
 
-				url := str_value
-				_, ok := r.doc.Links[url]
+				str_link := string(node.LinkData.Destination)
+				link, err := url.Parse(str_link)
 
-				if ok {
-					r.doc.Links[url] += 1
-				} else {
-					r.doc.Links[url] = 1
+				if err != nil {
+					r.doc.Links[str_link] = link
 				}
 
 			}
@@ -108,28 +107,23 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 	case blackfriday.Link:
 
 		if entering {
-			url := string(node.LinkData.Destination)
+			str_link := string(node.LinkData.Destination)
+			link, err := url.Parse(str_link)
 
-			_, ok := r.doc.Links[url]
-
-			if ok {
-				r.doc.Links[url] += 1
-			} else {
-				r.doc.Links[url] = 1
+			if err != nil {
+				r.doc.Links[str_link] = link
 			}
 		}
 
 	case blackfriday.Image:
 
 		if entering {
-			href := string(node.LinkData.Destination)
 
-			_, ok := r.doc.Links[href]
+			str_link := string(node.LinkData.Destination)
+			link, err := url.Parse(str_link)
 
-			if ok {
-				r.doc.Links[href] += 1
-			} else {
-				r.doc.Links[href] = 1
+			if err != nil {
+				r.doc.Links[str_link] = link
 			}
 
 		}

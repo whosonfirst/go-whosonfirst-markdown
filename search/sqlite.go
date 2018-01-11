@@ -7,7 +7,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
-	_ "log"
+	"log"
 	"strings"
 )
 
@@ -90,6 +90,7 @@ func NewSQLiteIndexer(dsn string) (Indexer, error) {
 
 		CREATE TABLE links (
 		       post_id TEXT,
+		       domain TEXT,
 		       link TEXT,
 		       date TEXT
 		);
@@ -247,6 +248,7 @@ func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *Searc
 
 			defer stmt.Close()
 
+			log.Println("INSERT AUTHOR", post_id, author, date)
 			_, err = stmt.Exec(post_id, author, date)
 
 			if err != nil {
@@ -288,9 +290,9 @@ func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchD
 		post_id := search_doc.Id
 		date := search_doc.Date
 
-		for _, link := range search_doc.Links {
+		for link, url := range search_doc.Links {
 
-			sql := fmt.Sprintf(`INSERT OR REPLACE INTO links (post_id, link, date) VALUES (?, ?, ?)`)
+			sql := fmt.Sprintf(`INSERT OR REPLACE INTO links (post_id, host, link, date) VALUES (?, ?, ?, ?)`)
 			stmt, err := tx.Prepare(sql)
 
 			if err != nil {
@@ -299,7 +301,9 @@ func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchD
 
 			defer stmt.Close()
 
-			_, err = stmt.Exec(post_id, link, date)
+			log.Println("LINK", link)
+			log.Println("INSERT LINK", post_id, url.Host, url.Path, date)
+			_, err = stmt.Exec(post_id, url.Host, url.Path, date)
 
 			if err != nil {
 				return err

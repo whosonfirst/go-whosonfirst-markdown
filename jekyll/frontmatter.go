@@ -16,6 +16,7 @@ layout: {{ .Layout }}
 permalink: {{ .Permalink }}
 published: {{ .Published }}
 title: {{ .Title }}
+date: {{ .Date }}
 category: {{ .Category}}
 excerpt: {{ .Excerpt }}
 authors: {{ .Authors }}

@@ -6,15 +6,10 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"io"
+	_ "log"
 	"os"
 	"strings"
 )
-
-func string2string(s string) string {
-	s = strings.TrimLeft(s, "\"")
-	s = strings.TrimRight(s, "\"")
-	return s
-}
 
 type ParseOptions struct {
 	FrontMatter bool
@@ -73,6 +68,9 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 			continue
 		}
 
+		// this stuff should probably be moved in to jekyll/jekyll.go
+		// (20181011/thisisaaronland)
+
 		if is_jekyll {
 
 			if opts.FrontMatter {
@@ -81,17 +79,23 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				key := strings.Trim(kv[0], " ")
 				value := strings.Trim(kv[1], " ")
 
+				// log.Println("FRONT MATTER", ln)
+
 				switch key {
 				case "authors":
 					fm.Authors = string2list(value)
 				case "category":
-					fm.Category = value
+					fm.Category = string2string(value)
+				case "date":
+					fm.Date = string2string(value)
 				case "excerpt":
-					fm.Excerpt = value
+					fm.Excerpt = string2string(value)
 				case "image":
-					fm.Image = value
+					fm.Image = string2string(value)
 				case "layout":
-					fm.Layout = value
+					fm.Layout = string2string(value)
+				case "permalink":
+					fm.Permalink = string2string(value)
 				case "published":
 					fm.Published = string2bool(value)
 				case "tag":
@@ -99,7 +103,7 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				case "tags":
 					fm.Tags = string2list(value)
 				case "title":
-					fm.Title = value
+					fm.Title = string2string(value)
 				default:
 					// pass
 				}
@@ -116,6 +120,12 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 	body := markdown.Body{&b}
 
 	return fm, &body, nil
+}
+
+func string2string(s string) string {
+	s = strings.TrimLeft(s, "\"")
+	s = strings.TrimRight(s, "\"")
+	return s
 }
 
 func string2list(s string) []string {
