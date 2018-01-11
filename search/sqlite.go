@@ -1,12 +1,13 @@
 package search
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"log"
+	_ "log"
 	"strings"
 )
 
@@ -22,6 +23,10 @@ func NewSQLiteIndexer(dsn string) (Indexer, error) {
 	// we will replace most of the code below with go-whosonfirst-sqlite
 	// and a series of markdown specific tables but not today...
 	// (20180110/thisisaaronland)
+
+	// or maybe not until the interface for go-whosonfirst-sqlite is
+	// updated to index interface{} rather than geojson.Feature - really
+	// I don't know yet... (20180110/thisisaaronland)
 
 	conn, err := sql.Open("sqlite3", dsn)
 
@@ -64,7 +69,7 @@ func NewSQLiteIndexer(dsn string) (Indexer, error) {
 
 		schema := `CREATE TABLE documents (
 		       id TEXT PRIMARY KEY,
-		       title TEXT
+		       title TEXT,
 		       category TEXT,
 		       date TEXT,
 		       body TEXT,
@@ -131,48 +136,182 @@ func (i *SQLiteIndexer) IndexDocument(doc *markdown.Document) (*SearchDocument, 
 		return nil, err
 	}
 
-	conn, err := i.Conn()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err = i.IndexDocumentsTable(ctx, search_doc)
 
 	if err != nil {
 		return nil, err
 	}
 
-	tx, err := conn.Begin()
+	err = i.IndexAuthorsTable(ctx, search_doc)
 
 	if err != nil {
 		return nil, err
 	}
 
-	str_body := strings.Join(search_doc.Body, " ")
-	str_code := strings.Join(search_doc.Code, " ")
+	err = i.IndexLinksTable(ctx, search_doc)
 
-	sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents (
+	if err != nil {
+		return nil, err
+	}
+
+	return search_doc, nil
+}
+
+func (i *SQLiteIndexer) IndexDocumentsTable(ctx context.Context, search_doc *SearchDocument) error {
+
+	select {
+
+	case <-ctx.Done():
+		return nil
+	default:
+
+		conn, err := i.Conn()
+
+		if err != nil {
+			return err
+		}
+
+		tx, err := conn.Begin()
+
+		if err != nil {
+			return err
+		}
+
+		str_body := strings.Join(search_doc.Body, " ")
+		str_code := strings.Join(search_doc.Code, " ")
+
+		sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents (
 		id, title, category, date, body, code
-	) VALUES (
+			) VALUES (
 		?, ?, ?, ?, ?, ?
-	)`)
+		)`)
 
-	log.Println(sql)
+		stmt, err := tx.Prepare(sql)
 
-	stmt, err := tx.Prepare(sql)
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
-		return nil, err
+		defer stmt.Close()
+
+		_, err = stmt.Exec(search_doc.Id, search_doc.Title, search_doc.Category, search_doc.Date, str_body, str_code)
+
+		if err != nil {
+			return err
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
+}
 
-	defer stmt.Close()
+func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *SearchDocument) error {
 
-	_, err = stmt.Exec(search_doc.Id, search_doc.Title, search_doc.Category, search_doc.Date, str_body, str_code)
+	select {
 
-	if err != nil {
-		return nil, err
+	case <-ctx.Done():
+		return nil
+	default:
+
+		conn, err := i.Conn()
+
+		if err != nil {
+			return err
+		}
+
+		tx, err := conn.Begin()
+
+		if err != nil {
+			return err
+		}
+
+		post_id := search_doc.Id
+		date := search_doc.Date
+
+		for _, author := range search_doc.Authors {
+
+			sql := fmt.Sprintf(`INSERT OR REPLACE INTO authors (post_id, author, date) VALUES (?, ?, ?)`)
+			stmt, err := tx.Prepare(sql)
+
+			if err != nil {
+				return err
+			}
+
+			defer stmt.Close()
+
+			_, err = stmt.Exec(post_id, author, date)
+
+			if err != nil {
+				return err
+			}
+
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
+}
 
-	err = tx.Commit()
+func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchDocument) error {
 
-	if err != nil {
-		return nil, err
+	select {
+
+	case <-ctx.Done():
+		return nil
+	default:
+
+		conn, err := i.Conn()
+
+		if err != nil {
+			return err
+		}
+
+		tx, err := conn.Begin()
+
+		if err != nil {
+			return err
+		}
+
+		post_id := search_doc.Id
+		date := search_doc.Date
+
+		for _, link := range search_doc.Links {
+
+			sql := fmt.Sprintf(`INSERT OR REPLACE INTO links (post_id, link, date) VALUES (?, ?, ?)`)
+			stmt, err := tx.Prepare(sql)
+
+			if err != nil {
+				return err
+			}
+
+			defer stmt.Close()
+
+			_, err = stmt.Exec(post_id, link, date)
+
+			if err != nil {
+				return err
+			}
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
-
-	return nil, errors.New("Please write me")
 }
