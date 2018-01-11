@@ -61,7 +61,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 						return nil
 					}
 
-					idx := filepath.Join(p, "index.md")
+					idx := filepath.Join(p, opts.Input)
 					info, err := os.Stat(idx)
 
 					if err != nil && !os.IsNotExist(err) {
@@ -137,7 +137,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 	default:
 
 		tm := `{{ range $fm := .Posts }}
-### [{{ $fm.Title }}]({{ $fm.URI }})
+### [{{ $fm.Title }}]({{ $fm.Permalink }})
 
 > {{ $fm.Excerpt }}
 
