@@ -11,7 +11,7 @@ import (
 
 type Indexer interface {
 	IndexDocument(*markdown.Document) (*SearchDocument, error)
-	Query(string) (interface{}, error) // not sure what this should really return, re-inflating a SearchDocument seems like overkill
+	Query(*SearchQuery) (interface{}, error) // not sure what this should really return, re-inflating a SearchDocument seems like overkill
 	Close() error
 }
 
@@ -26,6 +26,19 @@ type SearchDocument struct {
 	Images   map[string]int
 	Body     []string
 	Code     []string
+}
+
+type SearchQuery struct {
+	QueryString string
+}
+
+func NewDefaultSearchQuery(qs string) (*SearchQuery, error) {
+
+	q := SearchQuery{
+		QueryString: qs,
+	}
+
+	return &q, nil
 }
 
 func NewSearchDocument(doc *markdown.Document) (*SearchDocument, error) {
@@ -83,7 +96,7 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 				str_link := string(node.LinkData.Destination)
 				link, err := url.Parse(str_link)
 
-				if err != nil {
+				if err == nil {
 					r.doc.Links[str_link] = link
 				}
 
@@ -110,7 +123,7 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 			str_link := string(node.LinkData.Destination)
 			link, err := url.Parse(str_link)
 
-			if err != nil {
+			if err == nil {
 				r.doc.Links[str_link] = link
 			}
 		}
@@ -122,7 +135,7 @@ func (r *SearchRenderer) RenderNode(w io.Writer, node *blackfriday.Node, enterin
 			str_link := string(node.LinkData.Destination)
 			link, err := url.Parse(str_link)
 
-			if err != nil {
+			if err == nil {
 				r.doc.Links[str_link] = link
 			}
 

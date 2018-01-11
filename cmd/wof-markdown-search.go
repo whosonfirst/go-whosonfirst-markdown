@@ -70,7 +70,13 @@ func main() {
 
 	if *q != "" {
 
-		r, err := idx.Query(*q)
+		query, err := search.NewDefaultSearchQuery(*q)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		r, err := idx.Query(query)
 
 		if err != nil {
 			log.Fatal(err)

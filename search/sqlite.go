@@ -1,5 +1,8 @@
 package search
 
+// https://sqlite.org/fts3.html
+// https://www.sqlite.org/fts5.html
+
 import (
 	"context"
 	"database/sql"
@@ -7,7 +10,7 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"log"
+	_ "log"
 	"strings"
 )
 
@@ -79,24 +82,24 @@ func NewSQLiteIndexer(dsn string) (Indexer, error) {
 		CREATE INDEX documents_by_date ON documents (date);
 		CREATE INDEX documents_by_body ON documents (body);
 
-		CREATE TABLE authors (
-		       post_id TEXT,
+		CREATE VIRTUAL TABLE documents_search USING fts4(id, title, category, body, code);
+
+		CREATE TABLE documents_authors (
+		       document_id TEXT,
 		       author TEXT,
 		       date TEXT
 		);
 
-		CREATE UNIQUE INDEX authors_by_author ON authors (post_id, author);
-		CREATE INDEX authors_by_date ON authors (author, date);
+		CREATE UNIQUE INDEX documents_authors_by_author ON documents_authors (document_id, author);
+		CREATE INDEX documents_authors_by_date ON documents_authors (author, date);
 
-		CREATE TABLE links (
-		       post_id TEXT,
-		       domain TEXT,
-		       link TEXT,
-		       date TEXT
+		CREATE TABLE documents_links (
+		       document_id TEXT,
+		       host TEXT,
+		       link TEXT
 		);
 
-		CREATE UNIQUE INDEX links_by_link ON links (post_id, link);
-		CREATE INDEX links_by_date ON links (date);
+		CREATE UNIQUE INDEX documents_links_by_link ON documents_links (document_id, host, link);
 		`
 		_, err = conn.Exec(schema)
 
@@ -125,7 +128,8 @@ func (i *SQLiteIndexer) Close() error {
 	return i.conn.Close()
 }
 
-func (i *SQLiteIndexer) Query(q string) (interface{}, error) {
+func (i *SQLiteIndexer) Query(q *SearchQuery) (interface{}, error) {
+
 	return nil, errors.New("Please write me")
 }
 
@@ -146,13 +150,19 @@ func (i *SQLiteIndexer) IndexDocument(doc *markdown.Document) (*SearchDocument, 
 		return nil, err
 	}
 
-	err = i.IndexAuthorsTable(ctx, search_doc)
+	err = i.IndexDocumentsAuthorsTable(ctx, search_doc)
 
 	if err != nil {
 		return nil, err
 	}
 
-	err = i.IndexLinksTable(ctx, search_doc)
+	err = i.IndexDocumentsLinksTable(ctx, search_doc)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = i.IndexDocumentsSearchTable(ctx, search_doc)
 
 	if err != nil {
 		return nil, err
@@ -214,7 +224,7 @@ func (i *SQLiteIndexer) IndexDocumentsTable(ctx context.Context, search_doc *Sea
 	}
 }
 
-func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *SearchDocument) error {
+func (i *SQLiteIndexer) IndexDocumentsAuthorsTable(ctx context.Context, search_doc *SearchDocument) error {
 
 	select {
 
@@ -234,12 +244,12 @@ func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *Searc
 			return err
 		}
 
-		post_id := search_doc.Id
+		document_id := search_doc.Id
 		date := search_doc.Date
 
 		for _, author := range search_doc.Authors {
 
-			sql := fmt.Sprintf(`INSERT OR REPLACE INTO authors (post_id, author, date) VALUES (?, ?, ?)`)
+			sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents_authors (document_id, author, date) VALUES (?, ?, ?)`)
 			stmt, err := tx.Prepare(sql)
 
 			if err != nil {
@@ -248,8 +258,7 @@ func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *Searc
 
 			defer stmt.Close()
 
-			log.Println("INSERT AUTHOR", post_id, author, date)
-			_, err = stmt.Exec(post_id, author, date)
+			_, err = stmt.Exec(document_id, author, date)
 
 			if err != nil {
 				return err
@@ -267,7 +276,7 @@ func (i *SQLiteIndexer) IndexAuthorsTable(ctx context.Context, search_doc *Searc
 	}
 }
 
-func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchDocument) error {
+func (i *SQLiteIndexer) IndexDocumentsLinksTable(ctx context.Context, search_doc *SearchDocument) error {
 
 	select {
 
@@ -287,12 +296,15 @@ func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchD
 			return err
 		}
 
-		post_id := search_doc.Id
-		date := search_doc.Date
+		document_id := search_doc.Id
 
-		for link, url := range search_doc.Links {
+		// maybe dissolve links into their own table not associated with documents
+		// and simply store post_id, link_id... in a `documents_links` table - maybe
+		// but not today (2018011/thisisaaronland)
 
-			sql := fmt.Sprintf(`INSERT OR REPLACE INTO links (post_id, host, link, date) VALUES (?, ?, ?, ?)`)
+		for _, url := range search_doc.Links {
+
+			sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents_links (document_id, host, link) VALUES (?, ?, ?)`)
 			stmt, err := tx.Prepare(sql)
 
 			if err != nil {
@@ -301,13 +313,64 @@ func (i *SQLiteIndexer) IndexLinksTable(ctx context.Context, search_doc *SearchD
 
 			defer stmt.Close()
 
-			log.Println("LINK", link)
-			log.Println("INSERT LINK", post_id, url.Host, url.Path, date)
-			_, err = stmt.Exec(post_id, url.Host, url.Path, date)
+			_, err = stmt.Exec(document_id, url.Host, url.Path)
 
 			if err != nil {
 				return err
 			}
+		}
+
+		err = tx.Commit()
+
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+}
+
+func (i *SQLiteIndexer) IndexDocumentsSearchTable(ctx context.Context, search_doc *SearchDocument) error {
+
+	select {
+
+	case <-ctx.Done():
+		return nil
+	default:
+
+		conn, err := i.Conn()
+
+		if err != nil {
+			return err
+		}
+
+		tx, err := conn.Begin()
+
+		if err != nil {
+			return err
+		}
+
+		str_body := strings.Join(search_doc.Body, " ")
+		str_code := strings.Join(search_doc.Code, " ")
+
+		sql := fmt.Sprintf(`INSERT OR REPLACE INTO documents_search (
+		id, title, category, body, code
+			) VALUES (
+		?, ?, ?, ?, ?
+		)`)
+
+		stmt, err := tx.Prepare(sql)
+
+		if err != nil {
+			return err
+		}
+
+		defer stmt.Close()
+
+		_, err = stmt.Exec(search_doc.Id, search_doc.Title, search_doc.Category, str_body, str_code)
+
+		if err != nil {
+			return err
 		}
 
 		err = tx.Commit()

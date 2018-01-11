@@ -50,8 +50,8 @@ func (i *BleveIndexer) Close() error {
 	return nil
 }
 
-func (i *BleveIndexer) Query(q string) (interface{}, error) {
-	query := bleve.NewQueryStringQuery(q)
+func (i *BleveIndexer) Query(q *SearchQuery) (interface{}, error) {
+	query := bleve.NewQueryStringQuery(q.QueryString)
 	req := bleve.NewSearchRequest(query)
 	return i.index.Search(req)
 }
