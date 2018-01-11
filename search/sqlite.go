@@ -6,7 +6,6 @@ package search
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
@@ -130,7 +129,21 @@ func (i *SQLiteIndexer) Close() error {
 
 func (i *SQLiteIndexer) Query(q *SearchQuery) (interface{}, error) {
 
-	return nil, errors.New("Please write me")
+	conn, err := i.Conn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	sql := fmt.Sprintf("SELECT * FROM documents_search(?)")
+
+	rows, err := conn.Query(sql, q.QueryString)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return rows, nil
 }
 
 func (i *SQLiteIndexer) IndexDocument(doc *markdown.Document) (*SearchDocument, error) {
