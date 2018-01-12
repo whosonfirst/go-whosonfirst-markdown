@@ -6,6 +6,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"github.com/djherbis/times"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
@@ -16,6 +17,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -40,6 +42,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 
 		select {
 		case <-ctx.Done():
+			log.Println("DONE")
 			return nil
 		default:
 
@@ -81,6 +84,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 			fm, err := RenderPath(ctx, path, opts)
 
 			if err != nil {
+				log.Println("OOPS", path, err)
 				return err
 			}
 
@@ -88,8 +92,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 				return nil
 			}
 
-			dt := fm.Date
-			t, err := time.Parse("January 02, 2006", dt)
+			t, err := time.Parse("2006-01-02", fm.Date)
 
 			if err != nil {
 				return err
@@ -112,6 +115,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 	err := c.Crawl(cb)
 
 	if err != nil {
+		log.Println("FAILED TO CRAWL", err)
 		return nil
 	}
 
@@ -207,6 +211,8 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
+		// THIS IS ALL DEPRECATED
+
 		fname := filepath.Base(abs_path)
 
 		if fname != opts.Input {
@@ -223,14 +229,9 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 		dd := parts[(count-1)-1]
 		post := parts[(count - 1)]
 
-		t, err := time.Parse("2006-01-02", fmt.Sprintf("%s-%s-%s", yyyy, mm, dd))
-
-		if err != nil {
-			return nil, err
-		}
-
-		dt := t.Format("January 02, 2006")
 		uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
+
+		// END OF THIS IS ALL DEPRECATED
 
 		parse_opts := parser.DefaultParseOptions()
 		parse_opts.Body = false
@@ -241,8 +242,51 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
-		fm.Date = dt
-		fm.Permalink = uri
+		// PLEASE MOVE THIS INTO parser/parser.go OR AT LEAST A
+		// SHARED FUNCTION (20180111/thisisaaronland)
+
+		if fm.Date == "" {
+
+			re, err := regexp.Compile(`.*\/(\d{4})\/(\d{2})\/(\d{2})\/.*`)
+
+			if err != nil {
+				return nil, err
+			}
+
+			m := re.FindAllStringSubmatch(abs_path, 1)
+
+			if len(m) == 1 {
+
+				yyyy := m[0][1]
+				mm := m[0][2]
+				dd := m[0][3]
+
+				dt := fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+				fm.Date = dt
+			} else {
+
+				info, err := times.Stat(abs_path)
+
+				if err != nil {
+					return nil, err
+				}
+
+				var t time.Time
+
+				if info.HasBirthTime() {
+					t = info.BirthTime()
+				} else {
+					t = info.ChangeTime() // not an awesome solution but what else can we do...
+				}
+
+				dt := t.Format("2006-01-02")
+				fm.Date = dt
+			}
+		}
+
+		if fm.Permalink == "" {
+			fm.Permalink = uri // FIX ME
+		}
 
 		return fm, nil
 	}

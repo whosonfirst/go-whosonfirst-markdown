@@ -25,6 +25,7 @@ build:	fmt bin
 deps:   
 	@GOPATH=$(GOPATH) go get -u "github.com/microcosm-cc/bluemonday"
 	@GOPATH=$(GOPATH) go get -u "gopkg.in/russross/blackfriday.v2"
+	@GOPATH=$(GOPATH) go get -u "github.com/djherbis/times"
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
 	@GOPATH=$(GOPATH) go get -u "github.com/blevesearch/bleve"

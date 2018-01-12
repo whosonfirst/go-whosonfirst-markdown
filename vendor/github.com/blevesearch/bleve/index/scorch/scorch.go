@@ -37,14 +37,6 @@ const Name = "scorch"
 
 const Version uint8 = 1
 
-// UnInvertIndex is implemented by various scorch index implementations
-// to provide the un inverting of the postings or other indexed values.
-type UnInvertIndex interface {
-	// apparently need better namings here..
-	VisitDocumentFieldTerms(localDocNum uint64, fields []string,
-		visitor index.DocumentFieldTermVisitor) error
-}
-
 type Scorch struct {
 	readOnly      bool
 	version       uint8
@@ -410,13 +402,15 @@ func (s *Scorch) AddEligibleForRemoval(epoch uint64) {
 func (s *Scorch) MemoryUsed() uint64 {
 	var memUsed uint64
 	s.rootLock.RLock()
-	for _, segmentSnapshot := range s.root.segment {
-		memUsed += 8 /* size of id -> uint64 */ +
-			segmentSnapshot.segment.SizeInBytes()
-		if segmentSnapshot.deleted != nil {
-			memUsed += segmentSnapshot.deleted.GetSizeInBytes()
+	if s.root != nil {
+		for _, segmentSnapshot := range s.root.segment {
+			memUsed += 8 /* size of id -> uint64 */ +
+				segmentSnapshot.segment.SizeInBytes()
+			if segmentSnapshot.deleted != nil {
+				memUsed += segmentSnapshot.deleted.GetSizeInBytes()
+			}
+			memUsed += segmentSnapshot.cachedDocs.sizeInBytes()
 		}
-		memUsed += segmentSnapshot.cachedDocs.sizeInBytes()
 	}
 	s.rootLock.RUnlock()
 	return memUsed
