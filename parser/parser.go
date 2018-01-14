@@ -3,12 +3,17 @@ package parser
 import (
 	"bufio"
 	"bytes"
+	"fmt"
+	"github.com/djherbis/times"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"io"
 	_ "log"
 	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
+	"time"
 )
 
 type ParseOptions struct {
@@ -28,7 +33,13 @@ func DefaultParseOptions() *ParseOptions {
 
 func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.Body, error) {
 
-	fh, err := os.Open(path)
+	abs_path, err := filepath.Abs(path)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fh, err := os.Open(abs_path)
 
 	if err != nil {
 		return nil, nil, err
@@ -36,7 +47,81 @@ func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.
 
 	defer fh.Close()
 
-	return Parse(fh, opts)
+	fm, body, err := Parse(fh, opts)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if fm.Date == "" {
+
+		re, err := regexp.Compile(`.*\/(\d{4})\/(\d{2})\/(\d{2})\/.*`)
+
+		if err != nil {
+			return nil, nil, err
+		}
+
+		m := re.FindAllStringSubmatch(abs_path, 1)
+
+		if len(m) == 1 {
+
+			yyyy := m[0][1]
+			mm := m[0][2]
+			dd := m[0][3]
+
+			dt := fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
+			fm.Date = dt
+		} else {
+
+			info, err := times.Stat(abs_path)
+
+			if err != nil {
+				return nil, nil, err
+			}
+
+			var t time.Time
+
+			if info.HasBirthTime() {
+				t = info.BirthTime()
+			} else {
+				t = info.ChangeTime() // not an awesome solution but what else can we do...
+			}
+
+			dt := t.Format("2006-01-02")
+			fm.Date = dt
+		}
+	}
+
+	if fm.Permalink == "" {
+
+		// THIS IS ALL DEPRECATED
+
+		/*
+			fname := filepath.Base(abs_path)
+
+			if fname != opts.Input {
+				return nil, nil
+			}
+
+			root := filepath.Dir(abs_path)
+
+			parts := strings.Split(root, "/")
+			count := len(parts)
+
+			yyyy := parts[(count-1)-3]
+			mm := parts[(count-1)-2]
+			dd := parts[(count-1)-1]
+			post := parts[(count - 1)]
+
+			uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
+		*/
+
+		// END OF THIS IS ALL DEPRECATED
+
+		// fm.Permalink = uri // FIX ME
+	}
+
+	return fm, body, nil
 }
 
 func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.Body, error) {

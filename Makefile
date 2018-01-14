@@ -11,7 +11,6 @@ self:   prep
 	cp -r jekyll src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r parser src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
-	cp -r search src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r utils src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r writer src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
@@ -28,9 +27,6 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "github.com/djherbis/times"
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
-	@GOPATH=$(GOPATH) go get -u "github.com/blevesearch/bleve"
-	@GOPATH=$(GOPATH) go get -u "github.com/mattn/go-sqlite3"
-	@GOPATH=$(GOPATH) go install "github.com/mattn/go-sqlite3"
 
 vendor-deps: rmdeps deps
 	if test ! -d vendor; then mkdir vendor; fi
@@ -45,7 +41,6 @@ fmt:
 	go fmt jekyll/*.go
 	go fmt parser/*.go
 	go fmt render/*.go
-	go fmt search/*.go
 	go fmt utils/*.go
 	go fmt writer/*.go
 	go fmt *.go
@@ -54,5 +49,4 @@ bin: 	rmdeps self
 	rm -rf bin/*
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-index cmd/wof-markdown-index.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-parse cmd/wof-markdown-parse.go
-	@GOPATH=$(shell pwd) go build -o bin/wof-markdown-search cmd/wof-markdown-search.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-md2html cmd/wof-md2html.go
