@@ -176,6 +176,10 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
+		if filepath.Base(abs_path) != opts.Input {
+			return nil, nil
+		}
+
 		parse_opts := parser.DefaultParseOptions()
 		parse_opts.Body = false
 
@@ -185,6 +189,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
+		log.Println(abs_path, fm.String())
 		return fm, nil
 	}
 }

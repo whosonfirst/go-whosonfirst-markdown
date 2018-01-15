@@ -94,31 +94,19 @@ func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.
 
 	if fm.Permalink == "" {
 
-		// THIS IS ALL DEPRECATED
+		re, err := regexp.Compile(`.*(\/(?:\d{4})\/(?:\d{2})\/(?:\d{2})\/.*)`)
 
-		/*
-			fname := filepath.Base(abs_path)
+		if err != nil {
+			return nil, nil, err
+		}
 
-			if fname != opts.Input {
-				return nil, nil
-			}
+		m := re.FindAllStringSubmatch(abs_path, 1)
 
-			root := filepath.Dir(abs_path)
-
-			parts := strings.Split(root, "/")
-			count := len(parts)
-
-			yyyy := parts[(count-1)-3]
-			mm := parts[(count-1)-2]
-			dd := parts[(count-1)-1]
-			post := parts[(count - 1)]
-
-			uri := fmt.Sprintf("/blog/%s/%s/%s/%s/", yyyy, mm, dd, post)
-		*/
-
-		// END OF THIS IS ALL DEPRECATED
-
-		// fm.Permalink = uri // FIX ME
+		if len(m) == 1 {
+			rel_path := m[0][1]
+			permalink := filepath.Dir(rel_path)
+			fm.Permalink = permalink + "/"
+		}
 	}
 
 	return fm, body, nil
