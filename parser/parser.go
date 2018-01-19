@@ -53,7 +53,7 @@ func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.
 		return nil, nil, err
 	}
 
-	if fm.Date == "" {
+	if fm.Date == nil {
 
 		re, err := regexp.Compile(`.*\/(\d{4})\/(\d{2})\/(\d{2})\/.*`)
 
@@ -70,7 +70,14 @@ func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.
 			dd := m[0][3]
 
 			dt := fmt.Sprintf("%s-%s-%s", yyyy, mm, dd)
-			fm.Date = dt
+
+			t, err := time.Parse("2006-01-02", dt)
+
+			if err != nil {
+				return nil, nil, err
+			}
+
+			fm.Date = &t
 		} else {
 
 			info, err := times.Stat(abs_path)
@@ -87,8 +94,7 @@ func ParseFile(path string, opts *ParseOptions) (*jekyll.FrontMatter, *markdown.
 				t = info.ChangeTime() // not an awesome solution but what else can we do...
 			}
 
-			dt := t.Format("2006-01-02")
-			fm.Date = dt
+			fm.Date = &t
 		}
 	}
 
@@ -160,7 +166,16 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				case "category":
 					fm.Category = string2string(value)
 				case "date":
-					fm.Date = string2string(value)
+
+					dt := string2string(value)
+					t, err := time.Parse("2006-01-02", dt)
+
+					if err != nil {
+						return nil, nil, err
+					}
+
+					fm.Date = &t
+
 				case "excerpt":
 					fm.Excerpt = string2string(value)
 				case "image":

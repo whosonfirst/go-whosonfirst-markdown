@@ -18,7 +18,6 @@ import (
 	"sort"
 	"sync"
 	"text/template"
-	"time"
 )
 
 type nopCloser struct {
@@ -27,7 +26,9 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
-func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions) error {
+func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) error {
+
+	// log.Println("RENDER", dir)
 
 	lookup := make(map[string]*jekyll.FrontMatter)
 	dates := make([]string, 0)
@@ -38,18 +39,26 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 
 		select {
 		case <-ctx.Done():
-			log.Println("DONE")
 			return nil
 		default:
 
 			if info.IsDir() {
-				return nil // PLEASE MAKE ME WORK... (20180113/thisisaaronland)
+			   return nil			   
+			}
+
+			abs_path, err := filepath.Abs(path)
+
+			if err != nil {
+				return err
+			}
+
+			if filepath.Base(abs_path) != opts.Input {
+				return nil
 			}
 
 			fm, err := RenderPath(ctx, path, opts)
 
 			if err != nil {
-				log.Println("OOPS", path, err)
 				return err
 			}
 
@@ -57,13 +66,7 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 				return nil
 			}
 
-			t, err := time.Parse("2006-01-02", fm.Date)
-
-			if err != nil {
-				return err
-			}
-
-			ymd := t.Format("20060102")
+			ymd := fm.Date.Format("20060102")
 
 			mu.Lock()
 			dates = append(dates, ymd)
@@ -74,13 +77,12 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		}
 	}
 
-	c := crawl.NewCrawler(path)
+	c := crawl.NewCrawler(dir)
 	c.CrawlDirectories = true
 
 	err := c.Crawl(cb)
 
 	if err != nil {
-		log.Println("FAILED TO CRAWL", err)
 		return nil
 	}
 
@@ -95,7 +97,11 @@ func RenderDirectory(ctx context.Context, path string, opts *render.HTMLOptions)
 		return nil
 	}
 
-	return RenderPosts(ctx, path, posts, opts)
+	for _, fm := range posts {
+		log.Println(dir, fm.Permalink)
+	}
+	
+	return RenderPosts(ctx, dir, posts, opts)
 }
 
 func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, opts *render.HTMLOptions) error {
@@ -110,7 +116,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 > {{ $fm.Excerpt }}
 
-> _{{ $fm.Date }}_
+> _{{ if $fm.Date }}{{ $fm.Date }}{{ end }}_
 	    {{ end }}`
 
 		t, err := template.New("index").Parse(tm)
@@ -158,6 +164,9 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 			return err
 		}
 
+		log.Println("WRITE", root)
+		return nil
+
 		return utils.WriteHTML(html, root, opts)
 	}
 }
@@ -189,7 +198,6 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
-		log.Println(abs_path, fm.String())
 		return fm, nil
 	}
 }
