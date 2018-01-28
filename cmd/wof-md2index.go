@@ -43,7 +43,7 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 		default:
 
 			if info.IsDir() {
-			   return nil			   
+				return nil
 			}
 
 			abs_path, err := filepath.Abs(path)
@@ -100,7 +100,7 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 	for _, fm := range posts {
 		log.Println(dir, fm.Permalink)
 	}
-	
+
 	return RenderPosts(ctx, dir, posts, opts)
 }
 
@@ -142,6 +142,8 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 			return err
 		}
 
+		wr.Flush()
+
 		r := bytes.NewReader(b.Bytes())
 		fh := nopCloser{r}
 
@@ -149,18 +151,21 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		fm, buf, err := parser.Parse(fh, p_opts)
 
 		if err != nil {
+			log.Printf("FAILED to parse MD document, because %s\n", err)
 			return err
 		}
 
 		doc, err := markdown.NewDocument(fm, buf)
 
 		if err != nil {
+			log.Printf("FAILED to create MD document, because %s\n", err)
 			return err
 		}
 
 		html, err := render.RenderHTML(doc, opts)
 
 		if err != nil {
+			log.Printf("FAILED to render HTML document, because %s\n", err)
 			return err
 		}
 
@@ -179,6 +184,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 		abs_path, err := filepath.Abs(path)
 
 		if err != nil {
+			log.Printf("FAILED to render path %s, because %s\n", path, err)
 			return nil, err
 		}
 
@@ -192,6 +198,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 		fm, _, err := parser.ParseFile(abs_path, parse_opts)
 
 		if err != nil {
+			log.Printf("FAILED to parse %s, because %s\n", path, err)
 			return nil, err
 		}
 
