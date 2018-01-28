@@ -30,94 +30,14 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 
 	// log.Println("RENDER", dir)
 
-	lookup := make(map[string]*jekyll.FrontMatter)
-	dates := make([]string, 0)
-
-	mu := new(sync.Mutex)
-
-	cb := func(path string, info os.FileInfo) error {
-
-		select {
-		case <-ctx.Done():
-			return nil
-		default:
-
-			if info.IsDir() {
-
-				i := filepath.Join(path, opts.Input)
-				_, err := os.Stat(i)
-
-				if os.IsNotExist(err) {
-
-					cb2 := func(p string, i os.FileInfo) error {
-
-						log.Println("WHAT", p)
-						return nil
-					}
-
-					c2 := crawl.NewCrawler(path)
-					c2.CrawlDirectories = true
-
-					log.Println("RENDER", path)
-					return c2.Crawl(cb2)
-				}
-
-				return nil
-			}
-
-			abs_path, err := filepath.Abs(path)
-
-			if err != nil {
-				return err
-			}
-
-			if filepath.Base(abs_path) != opts.Input {
-				return nil
-			}
-
-			fm, err := RenderPath(ctx, path, opts)
-
-			if err != nil {
-				return err
-			}
-
-			if fm == nil {
-				return nil
-			}
-
-			ymd := fm.Date.Format("20060102")
-
-			mu.Lock()
-			dates = append(dates, ymd)
-			lookup[ymd] = fm
-			mu.Unlock()
-
-			return nil
-		}
-	}
-
-	c := crawl.NewCrawler(dir)
-	c.CrawlDirectories = true
-
-	err := c.Crawl(cb)
+	posts, err := GatherPosts(ctx, dir, opts)
 
 	if err != nil {
-		return nil
-	}
-
-	posts := make([]*jekyll.FrontMatter, 0)
-	sort.Sort(sort.Reverse(sort.StringSlice(dates)))
-
-	for _, ymd := range dates {
-		posts = append(posts, lookup[ymd])
+		return err
 	}
 
 	if len(posts) == 0 {
 		return nil
-	}
-
-	for _, fm := range posts {
-		log.Println(dir, fm.Permalink)
 	}
 
 	return RenderPosts(ctx, dir, posts, opts)
@@ -126,7 +46,9 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]*jekyll.FrontMatter, error) {
 
 	mu := new(sync.Mutex)
-	posts := make([]*jekyll.FrontMatter, 0)
+
+	lookup := make(map[string]*jekyll.FrontMatter)
+	dates := make([]string, 0)
 
 	cb := func(path string, info os.FileInfo) error {
 
@@ -135,13 +57,13 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 			return nil
 		default:
 
-			if info.IsDir() {
+			if info.IsDir() && path != root {
 
 				i := filepath.Join(path, opts.Input)
 				_, err := os.Stat(i)
 
 				if os.IsNotExist(err) {
-					log.Println("RENDER", path)
+					RenderDirectory(ctx, path, opts)
 				}
 
 				return nil
@@ -168,7 +90,9 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 			}
 
 			mu.Lock()
-			posts = append(posts, fm)
+			ymd := fm.Date.Format("20060102")
+			dates = append(dates, ymd)
+			lookup[ymd] = fm
 			mu.Unlock()
 		}
 
@@ -182,6 +106,14 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 
 	if err != nil {
 		return nil, err
+	}
+
+	posts := make([]*jekyll.FrontMatter, 0)
+
+	sort.Sort(sort.Reverse(sort.StringSlice(dates)))
+
+	for _, ymd := range dates {
+		posts = append(posts, lookup[ymd])
 	}
 
 	return posts, nil
