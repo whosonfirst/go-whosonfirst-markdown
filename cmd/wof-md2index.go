@@ -116,7 +116,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 > {{ $fm.Excerpt }}
 
-> _{{ if $fm.Date }}{{ $fm.Date }}{{ end }}_
+> _{{ if $fm.Date }}<span class="pubdate"><a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/">{{ $fm.Date.Format "Jan" }}</a> <a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/{{ $fm.Date.Day }}">{{ $fm.Date.Day}}</a>, <a href="/blog/{{ $fm.Date.Year }}/">{{ $fm.Date.Format "2006" }}</a></span>{{ end }}_
 	    {{ end }}`
 
 		t, err := template.New("index").Parse(tm)
@@ -163,9 +163,6 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		if err != nil {
 			return err
 		}
-
-		log.Println("WRITE", root)
-		return nil
 
 		return utils.WriteHTML(html, root, opts)
 	}
