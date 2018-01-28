@@ -43,6 +43,25 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 		default:
 
 			if info.IsDir() {
+
+				i := filepath.Join(path, opts.Input)
+				_, err := os.Stat(i)
+
+				if os.IsNotExist(err) {
+
+					cb2 := func(p string, i os.FileInfo) error {
+
+						log.Println("WHAT", p)
+						return nil
+					}
+
+					c2 := crawl.NewCrawler(path)
+					c2.CrawlDirectories = true
+
+					log.Println("RENDER", path)
+					return c2.Crawl(cb2)
+				}
+
 				return nil
 			}
 
@@ -102,6 +121,70 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 	}
 
 	return RenderPosts(ctx, dir, posts, opts)
+}
+
+func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]*jekyll.FrontMatter, error) {
+
+	mu := new(sync.Mutex)
+	posts := make([]*jekyll.FrontMatter, 0)
+
+	cb := func(path string, info os.FileInfo) error {
+
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+
+			if info.IsDir() {
+
+				i := filepath.Join(path, opts.Input)
+				_, err := os.Stat(i)
+
+				if os.IsNotExist(err) {
+					log.Println("RENDER", path)
+				}
+
+				return nil
+			}
+
+			abs_path, err := filepath.Abs(path)
+
+			if err != nil {
+				return err
+			}
+
+			if filepath.Base(abs_path) != opts.Input {
+				return nil
+			}
+
+			fm, err := RenderPath(ctx, path, opts)
+
+			if err != nil {
+				return err
+			}
+
+			if fm == nil {
+				return nil
+			}
+
+			mu.Lock()
+			posts = append(posts, fm)
+			mu.Unlock()
+		}
+
+		return nil
+	}
+
+	c := crawl.NewCrawler(root)
+	c.CrawlDirectories = true
+
+	err := c.Crawl(cb)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return posts, nil
 }
 
 func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, opts *render.HTMLOptions) error {
