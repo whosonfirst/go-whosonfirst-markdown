@@ -261,30 +261,6 @@ func main() {
 	opts.Footer = *footer
 	opts.Templates = t
 
-	/*
-		if *header != "" {
-
-			t, err := utils.LoadTemplate(*header, "header")
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			opts.Header = t
-		}
-
-		if *footer != "" {
-
-			t, err := utils.LoadTemplate(*footer, "footer")
-
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			opts.Footer = t
-		}
-	*/
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

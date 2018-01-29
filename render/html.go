@@ -64,14 +64,12 @@ func (r *WOFRenderer) RenderNode(w io.Writer, node *blackfriday.Node, entering b
 
 func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 
-	if r.templates == nil {
+	if r.templates == nil || r.header == "" {
 		r.bf.RenderHeader(w, ast)
 		return
 	}
 
 	err := r.templates.ExecuteTemplate(w, r.header, r.frontmatter)
-
-	// err := r.header.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
@@ -80,14 +78,12 @@ func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 
 func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 
-	if r.templates == nil {
+	if r.templates == nil || r.footer == "" {
 		r.bf.RenderFooter(w, ast)
 		return
 	}
 
 	err := r.templates.ExecuteTemplate(w, r.footer, r.frontmatter)
-
-	// err := r.footer.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)

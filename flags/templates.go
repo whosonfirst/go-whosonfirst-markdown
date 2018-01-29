@@ -43,6 +43,9 @@ func (t *TemplateFlags) Set(root string) error {
 	return c.Crawl(cb)
 }
 
+// Maybe move this in to a different package
+// (20180129/thisisaaronland)
+
 func (t *TemplateFlags) Parse() (*template.Template, error) {
 
 	if len(*t) == 0 {
