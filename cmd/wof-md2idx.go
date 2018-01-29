@@ -132,10 +132,24 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 > {{ $fm.Excerpt }}
 
-> _{{ if $fm.Date }}<span class="pubdate"><a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/">{{ $fm.Date.Format "Jan" }}</a> <a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/{{ $fm.Date.Day }}">{{ $fm.Date.Day}}</a>, <a href="/blog/{{ $fm.Date.Year }}/">{{ $fm.Date.Format "2006" }}</a></span>{{ end }}_
+{{$lena := len $fm.Authors }}
+{{$lent := len $fm.Tags }}
+<small style="font-style:italic;display:block;margin-bottom:2em;">This is a blog post by
+{{ range $ia, $a := $fm.Authors }}{{ if gt $lena 1 }}{{if eq $ia 0}}{{else if eq (plus1 $ia) $lena}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $a }}</a>{{ end }}
+{{ if gt $lent 0 }} that is tagged {{ range $it, $t := .Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $t }}</a>{{ end }}.{{end}}
+{{ if $fm.Date }} It was published on <span class="pubdate"><a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/">{{ $fm.Date.Format "January" }}</a> <a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/{{ $fm.Date.Format "02" }}">{{ $fm.Date.Format "02"}}</a>, <a href="/blog/{{ $fm.Date.Year }}/">{{ $fm.Date.Format "2006" }}</a></span>.{{ end }}
+</small>
+
 	    {{ end }}`
 
-		t, err := template.New("index").Parse(tm)
+	    // THIS IS A DIRTY HACK JUST TO GET THINGS WORKING 
+	var fns = template.FuncMap{
+		"plus1": func(x int) int {
+			return x + 1
+		},
+	}
+
+		t, err := template.New("index").Funcs(fns).Parse(tm)
 
 		if err != nil {
 			return err
