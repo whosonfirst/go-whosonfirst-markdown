@@ -140,6 +140,9 @@ func main() {
 	var header = flag.String("header", "", "The path to a custom (Go) template to use as header for your HTML output")
 	var footer = flag.String("footer", "", "The path to a custom (Go) template to use as a footer for your HTML output")
 
+	var templates flags.TemplateFlags
+	flag.Var(&templates, "templates", "One or more templates to parse in addition to -header and -footer")
+
 	var writers flags.WriterFlags
 	flag.Var(&writers, "writer", "One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout")
 

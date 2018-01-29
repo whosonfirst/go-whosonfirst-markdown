@@ -60,6 +60,9 @@ func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
+	// please use this instead (20180129/thisisaaronland)
+	// template.ExecuteTemplate(w, r.header.Name(), r.frontmatter)
+
 	err := r.header.Execute(w, r.frontmatter)
 
 	if err != nil {
@@ -73,6 +76,9 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 		r.bf.RenderFooter(w, ast)
 		return
 	}
+
+	// please use this instead (20180129/thisisaaronland)
+	// template.ExecuteTemplate(w, r.footer.Name(), r.frontmatter)
 
 	err := r.footer.Execute(w, r.frontmatter)
 
