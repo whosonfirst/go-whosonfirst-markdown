@@ -60,9 +60,9 @@ func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := template.ExecuteTemplate(w, r.header.Name(), r.frontmatter)
+	// err := r.header.ExecuteTemplate(w, r.header.Name(), r.frontmatter)
 
-	// err := r.header.Execute(w, r.frontmatter)
+	err := r.header.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
@@ -76,9 +76,9 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := template.ExecuteTemplate(w, r.footer.Name(), r.frontmatter)
+	// err := r.header.ExecuteTemplate(w, r.footer.Name(), r.frontmatter)
 
-	// err := r.footer.Execute(w, r.frontmatter)
+	err := r.footer.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
