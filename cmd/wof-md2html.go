@@ -58,6 +58,12 @@ func RenderPathWithRoot(ctx context.Context, path string, root string, opts *ren
 			return err
 		}
 
+		fname := filepath.Base(abs_path)
+
+		if fname != opts.Input {
+			return nil
+		}
+		
 		parse_opts := parser.DefaultParseOptions()
 		fm, body, err := parser.ParseFile(abs_path, parse_opts)
 
