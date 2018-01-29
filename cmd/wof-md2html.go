@@ -154,6 +154,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = templates.Parse()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	
 	opts := render.DefaultHTMLOptions()
 	opts.Mode = *mode
 	opts.Input = *input
