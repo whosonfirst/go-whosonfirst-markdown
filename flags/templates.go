@@ -43,12 +43,23 @@ func (t *TemplateFlags) Set(root string) error {
 	return c.Crawl(cb)
 }
 
-func (t *TemplateFlags) Parse() error {
+func (t *TemplateFlags) Parse() (*template.Template, error) {
 
 	if len(*t) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	_, err := template.ParseFiles(*t...)
-	return err
+	// https://play.golang.org/p/V94BPN0uKD
+
+	var fns = template.FuncMap{
+		"plus1": func(x int) int {
+			return x + 1
+		},
+	}
+
+	// we need something attach Funcs() to before we call
+	// ParseFiles() and if there's another way I don't know
+	// what it is...
+
+	return template.New("debug").Funcs(fns).ParseFiles(*t...)
 }

@@ -9,13 +9,12 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"github.com/whosonfirst/go-whosonfirst-markdown/utils"
+	_ "github.com/whosonfirst/go-whosonfirst-markdown/utils"
 	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
-	_ "time"
 )
 
 func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) error {
@@ -154,7 +153,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = templates.Parse()
+	t, err := templates.Parse()
 
 	if err != nil {
 		log.Fatal(err)
@@ -164,28 +163,33 @@ func main() {
 	opts.Mode = *mode
 	opts.Input = *input
 	opts.Output = *output
+	opts.Header = *header
+	opts.Footer = *footer
+	opts.Templates = t
 
-	if *header != "" {
+	/*
+		if *header != "" {
 
-		t, err := utils.LoadTemplate(*header, "header")
+			t, err := utils.LoadTemplate(*header, "header")
 
-		if err != nil {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			opts.Header = t
 		}
 
-		opts.Header = t
-	}
+		if *footer != "" {
 
-	if *footer != "" {
+			t, err := utils.LoadTemplate(*footer, "footer")
 
-		t, err := utils.LoadTemplate(*footer, "footer")
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		if err != nil {
-			log.Fatal(err)
+			opts.Footer = t
 		}
-
-		opts.Footer = t
-	}
+	*/
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "writer", wr)

@@ -7,6 +7,7 @@ import (
 	"flag"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
@@ -239,33 +240,50 @@ func main() {
 	var header = flag.String("header", "", "The path to a custom (Go) template to use as header for your HTML output")
 	var footer = flag.String("footer", "", "The path to a custom (Go) template to use as a footer for your HTML output")
 
+	var templates flags.TemplateFlags
+	flag.Var(&templates, "templates", "One or more templates to parse in addition to -header and -footer")
+
+	// var writers flags.WriterFlags
+	// flag.Var(&writers, "writer", "One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout")
+
 	flag.Parse()
+
+	t, err := templates.Parse()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	opts := render.DefaultHTMLOptions()
 	opts.Input = *input
 	opts.Output = *output
+	opts.Header = *header
+	opts.Footer = *footer
+	opts.Templates = t
 
-	if *header != "" {
+	/*
+		if *header != "" {
 
-		t, err := utils.LoadTemplate(*header, "header")
+			t, err := utils.LoadTemplate(*header, "header")
 
-		if err != nil {
-			log.Fatal(err)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			opts.Header = t
 		}
 
-		opts.Header = t
-	}
+		if *footer != "" {
 
-	if *footer != "" {
+			t, err := utils.LoadTemplate(*footer, "footer")
 
-		t, err := utils.LoadTemplate(*footer, "footer")
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		if err != nil {
-			log.Fatal(err)
+			opts.Footer = t
 		}
-
-		opts.Footer = t
-	}
+	*/
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
