@@ -5,8 +5,9 @@ import (
 	"bytes"
 	"context"
 	"flag"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
+	_ "github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
@@ -18,7 +19,7 @@ import (
 	"path/filepath"
 	"sort"
 	"sync"
-	"text/template"
+	"time"
 )
 
 type nopCloser struct {
@@ -27,9 +28,18 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
-func RenderDirectory(ctx context.Context, dir string, opts *render.FeedOptions) error {
+func Render(ctx context.Context, path string, opts *render.FeedOptions) error {
 
-	// log.Println("RENDER", dir)
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		return RenderDirectory(ctx, path, opts)
+	}
+
+}
+
+func RenderDirectory(ctx context.Context, dir string, opts *render.FeedOptions) error {
 
 	posts, err := GatherPosts(ctx, dir, opts)
 
@@ -42,6 +52,42 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.FeedOptions) 
 	}
 
 	return RenderPosts(ctx, dir, posts, opts)
+}
+
+// THIS IS A BAD NAME - ALSO SHOULD BE SHARED CODE...
+// (20180130/thisisaaronland)
+
+func RenderPath(ctx context.Context, path string, opts *render.FeedOptions) (*jekyll.FrontMatter, error) {
+
+	select {
+
+	case <-ctx.Done():
+		return nil, nil
+	default:
+
+		abs_path, err := filepath.Abs(path)
+
+		if err != nil {
+			log.Printf("FAILED to render path %s, because %s\n", path, err)
+			return nil, err
+		}
+
+		if filepath.Base(abs_path) != opts.Input {
+			return nil, nil
+		}
+
+		parse_opts := parser.DefaultParseOptions()
+		parse_opts.Body = false
+
+		fm, _, err := parser.ParseFile(abs_path, parse_opts)
+
+		if err != nil {
+			log.Printf("FAILED to parse %s, because %s\n", path, err)
+			return nil, err
+		}
+
+		return fm, nil
+	}
 }
 
 func GatherPosts(ctx context.Context, root string, opts *render.FeedOptions) ([]*jekyll.FrontMatter, error) {
@@ -58,7 +104,7 @@ func GatherPosts(ctx context.Context, root string, opts *render.FeedOptions) ([]
 			return nil
 		default:
 
-			if info.IsDir()  {
+			if info.IsDir() {
 				return nil
 			}
 
@@ -93,6 +139,8 @@ func GatherPosts(ctx context.Context, root string, opts *render.FeedOptions) ([]
 	}
 
 	c := crawl.NewCrawler(root)
+	c.CrawlDirectories = true
+
 	err := c.Crawl(cb)
 
 	if err != nil {
@@ -106,7 +154,7 @@ func GatherPosts(ctx context.Context, root string, opts *render.FeedOptions) ([]
 	for _, ymd := range dates {
 		posts = append(posts, lookup[ymd])
 
-		if len(posts) == 10 {	// please make me a variable
+		if len(posts) == opts.Items {
 			break
 		}
 	}
@@ -122,18 +170,29 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 	default:
 
 		type Data struct {
-			Posts []*jekyll.FrontMatter
+			Posts     []*jekyll.FrontMatter
+			BuildDate time.Time
 		}
 
+		now := time.Now()
+
 		d := Data{
-			Posts: posts,
+			Posts:     posts,
+			BuildDate: now,
 		}
+
+		// PLEASE REPLACE ALL OF THIS WILL A GENERIC utils.WriteTemplate
+		// THAT WRAPS ALL THE atomicfile STUFF AND WRITES STRAIGHT TO A
+		// FILEHANDLE RATHER THAN BYTES THEN... (20180130/thisisaaronland)
 
 		var b bytes.Buffer
 		wr := bufio.NewWriter(&b)
 
-		// RENDER TEMPLATE HERE
-		// err = t.Execute(wr, d)
+		t := fmt.Sprintf("feed_%s", opts.Format)
+
+		// CHECK TO SEE WHETHER t EXISTS HERE... (20180130/thisisaaronland)
+
+		err := opts.Templates.ExecuteTemplate(wr, t, d)
 
 		if err != nil {
 			return err
@@ -141,29 +200,19 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 		wr.Flush()
 
-		fh := nopCloser{ b }
+		r := bytes.NewReader(b.Bytes())
+		fh := nopCloser{r}
 
 		return utils.WriteFeed(fh, root, opts)
 	}
 }
 
-func Render(ctx context.Context, path string, opts *render.HTMLOptions) error {
-
-	select {
-	case <-ctx.Done():
-		return nil
-	default:
-		return RenderDirectory(ctx, path, opts)
-	}
-
-}
-
 func main() {
 
 	var input = flag.String("input", "index.md", "What you expect the input Markdown file to be called")
-	// var output = flag.String("output", "index.html", "What you expect the output HTML file to be called")
+	var output = flag.String("output", "", "...")
 
-	var format = flag.String("format", "rss", "...")
+	var format = flag.String("format", "rss_20", "...")
 	var items = flag.Int("items", 10, "...")
 
 	var templates flags.TemplateFlags
@@ -180,8 +229,13 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if *output == "" {
+		*output = fmt.Sprintf("%s.xml", *format)
+	}
+
 	opts := render.DefaultFeedOptions()
 	opts.Input = *input
+	opts.Output = *output
 	opts.Format = *format
 	opts.Items = *items
 	opts.Templates = t

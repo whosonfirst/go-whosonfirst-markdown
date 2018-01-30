@@ -38,7 +38,7 @@ func WriteHTML(fh io.ReadCloser, root string, opts *render.HTMLOptions) error {
 	return nil
 }
 
-func WriteFeed(fh io.ReadCloser, root string, opts *render.HTMLOptions) error {
+func WriteFeed(fh io.ReadCloser, root string, opts *render.FeedOptions) error {
 
 	if opts.Output == "STDOUT" {
 		_, err := io.Copy(os.Stdout, fh)
@@ -46,7 +46,7 @@ func WriteFeed(fh io.ReadCloser, root string, opts *render.HTMLOptions) error {
 
 	}
 
-	index := filepath.Join(root, "index.rss")	// please make a variable...
+	index := filepath.Join(root, opts.Output)
 
 	out, err := atomicfile.New(index, os.FileMode(0644))
 

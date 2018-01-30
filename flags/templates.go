@@ -1,5 +1,8 @@
 package flags
 
+// unclear whether we HTMLTemplateFlags and FeedTemplateFlags here...
+// (20180130/thisisaaronland)
+
 import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
@@ -28,7 +31,9 @@ func (t *TemplateFlags) Set(root string) error {
 
 		ext := filepath.Ext(path)
 
-		if ext != ".html" {
+		// NOT AWESOME...
+
+		if ext != ".html" && ext != ".xml" {
 			return nil
 		}
 

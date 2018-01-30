@@ -11,11 +11,9 @@ import (
 )
 
 type HTMLOptions struct {
-	Mode   string
-	Input  string
-	Output string
-	// Header *template.Template
-	// Footer *template.Template
+	Mode      string
+	Input     string
+	Output    string
 	Header    string
 	Footer    string
 	Templates *template.Template
@@ -24,11 +22,9 @@ type HTMLOptions struct {
 func DefaultHTMLOptions() *HTMLOptions {
 
 	opts := HTMLOptions{
-		Mode:   "files",
-		Input:  "index.md",
-		Output: "index.html",
-		// Header: nil,
-		// Footer: nil,
+		Mode:      "files",
+		Input:     "index.md",
+		Output:    "index.html",
 		Header:    "",
 		Footer:    "",
 		Templates: nil,
@@ -44,11 +40,9 @@ type nopCloser struct {
 type WOFRenderer struct {
 	bf          *blackfriday.HTMLRenderer
 	frontmatter *jekyll.FrontMatter
-	// header      *template.Template
-	// footer      *template.Template
-	header    string
-	footer    string
-	templates *template.Template
+	header      string
+	footer      string
+	templates   *template.Template
 }
 
 func (r *WOFRenderer) RenderNode(w io.Writer, node *blackfriday.Node, entering bool) blackfriday.WalkStatus {

@@ -1,20 +1,24 @@
 package render
 
 import (
-       "text/template"
+	"html/template"
 )
 
 type FeedOptions struct {
-	Format   string
-	Items	 int
+	Format    string
+	Input     string
+	Output    string
+	Items     int
 	Templates *template.Template
 }
 
 func DefaultFeedOptions() *FeedOptions {
 
 	opts := FeedOptions{
-		Format:   "rss",
-		Items:	  10,
+		Input:     "index.md",
+		Format:    "rss_20",
+		Output:    "rss_20.xml",
+		Items:     10,
 		Templates: nil,
 	}
 

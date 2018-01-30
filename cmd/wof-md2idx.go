@@ -142,12 +142,12 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 	    {{ end }}`
 
-	    // THIS IS A DIRTY HACK JUST TO GET THINGS WORKING 
-	var fns = template.FuncMap{
-		"plus1": func(x int) int {
-			return x + 1
-		},
-	}
+		// THIS IS A DIRTY HACK JUST TO GET THINGS WORKING
+		var fns = template.FuncMap{
+			"plus1": func(x int) int {
+				return x + 1
+			},
+		}
 
 		t, err := template.New("index").Funcs(fns).Parse(tm)
 
@@ -202,6 +202,9 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		return utils.WriteHTML(html, root, opts)
 	}
 }
+
+// THIS IS A BAD NAME - ALSO SHOULD BE SHARED CODE...
+// (20180130/thisisaaronland)
 
 func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
 
