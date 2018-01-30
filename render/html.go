@@ -63,7 +63,14 @@ func (r *WOFRenderer) RenderHeader(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := r.templates.ExecuteTemplate(w, r.header, r.frontmatter)
+	t := r.templates.Lookup(r.header)
+
+	if t == nil {
+		log.Printf("Invalid or missing template '%s'\n", r.header)
+		return
+	}
+
+	err := t.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
@@ -77,12 +84,18 @@ func (r *WOFRenderer) RenderFooter(w io.Writer, ast *blackfriday.Node) {
 		return
 	}
 
-	err := r.templates.ExecuteTemplate(w, r.footer, r.frontmatter)
+	t := r.templates.Lookup(r.footer)
+
+	if t == nil {
+		log.Printf("Invalid or missing template '%s'\n", r.footer)
+		return
+	}
+
+	err := t.Execute(w, r.frontmatter)
 
 	if err != nil {
 		log.Println(err)
 	}
-
 }
 
 func (nopCloser) Close() error { return nil }

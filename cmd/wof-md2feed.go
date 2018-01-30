@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
@@ -188,11 +189,14 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		var b bytes.Buffer
 		wr := bufio.NewWriter(&b)
 
-		t := fmt.Sprintf("feed_%s", opts.Format)
+		t_name := fmt.Sprintf("feed_%s", opts.Format)
+		t := opts.Templates.Lookup(t_name)
 
-		// CHECK TO SEE WHETHER t EXISTS HERE... (20180130/thisisaaronland)
+		if t == nil {
+			return errors.New(fmt.Sprintf("Invalid or missing template '%s'", t_name))
+		}
 
-		err := opts.Templates.ExecuteTemplate(wr, t, d)
+		err := t.Execute(wr, d)
 
 		if err != nil {
 			return err
