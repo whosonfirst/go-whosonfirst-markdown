@@ -1,25 +1,23 @@
 package flags
 
-// unclear whether we HTMLTemplateFlags and FeedTemplateFlags here...
-// (20180130/thisisaaronland)
-
 import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"html/template"
+	html_template "html/template"
 	_ "log"
 	"os"
 	"path/filepath"
 	"sync"
+	text_template "text/template"
 )
 
-type TemplateFlags []string
+type HTMLTemplateFlags []string
 
-func (t *TemplateFlags) String() string {
+func (t *HTMLTemplateFlags) String() string {
 	return fmt.Sprintf("%v", *t)
 }
 
-func (t *TemplateFlags) Set(root string) error {
+func (t *HTMLTemplateFlags) Set(root string) error {
 
 	mu := new(sync.Mutex)
 
@@ -31,9 +29,7 @@ func (t *TemplateFlags) Set(root string) error {
 
 		ext := filepath.Ext(path)
 
-		// NOT AWESOME...
-
-		if ext != ".html" && ext != ".xml" {
+		if ext != ".html" {
 			return nil
 		}
 
@@ -51,7 +47,7 @@ func (t *TemplateFlags) Set(root string) error {
 // Maybe move this in to a different package
 // (20180129/thisisaaronland)
 
-func (t *TemplateFlags) Parse() (*template.Template, error) {
+func (t *HTMLTemplateFlags) Parse() (*html_template.Template, error) {
 
 	if len(*t) == 0 {
 		return nil, nil
@@ -59,7 +55,7 @@ func (t *TemplateFlags) Parse() (*template.Template, error) {
 
 	// https://play.golang.org/p/V94BPN0uKD
 
-	var fns = template.FuncMap{
+	var fns = html_template.FuncMap{
 		"plus1": func(x int) int {
 			return x + 1
 		},
@@ -69,5 +65,55 @@ func (t *TemplateFlags) Parse() (*template.Template, error) {
 	// ParseFiles() and if there's another way I don't know
 	// what it is...
 
-	return template.New("debug").Funcs(fns).ParseFiles(*t...)
+	return html_template.New("debug").Funcs(fns).ParseFiles(*t...)
+}
+
+type FeedTemplateFlags []string
+
+func (t *FeedTemplateFlags) String() string {
+	return fmt.Sprintf("%v", *t)
+}
+
+func (t *FeedTemplateFlags) Set(root string) error {
+
+	mu := new(sync.Mutex)
+
+	cb := func(path string, info os.FileInfo) error {
+
+		if info.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(path)
+
+		if ext != ".xml" {
+			return nil
+		}
+
+		mu.Lock()
+		*t = append(*t, path)
+		mu.Unlock()
+
+		return nil
+	}
+
+	c := crawl.NewCrawler(root)
+	return c.Crawl(cb)
+}
+
+func (t *FeedTemplateFlags) Parse() (*text_template.Template, error) {
+
+	if len(*t) == 0 {
+		return nil, nil
+	}
+
+	// PLEASE RECONCILE THIS WITH ABOVE...
+
+	var fns = text_template.FuncMap{
+		"plus1": func(x int) int {
+			return x + 1
+		},
+	}
+
+	return text_template.New("debug").Funcs(fns).ParseFiles(*t...)
 }

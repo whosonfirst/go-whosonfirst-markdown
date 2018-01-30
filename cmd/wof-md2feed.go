@@ -215,7 +215,7 @@ func main() {
 	var format = flag.String("format", "rss_20", "...")
 	var items = flag.Int("items", 10, "...")
 
-	var templates flags.TemplateFlags
+	var templates flags.FeedTemplateFlags
 	flag.Var(&templates, "templates", "One or more templates to parse in addition to -header and -footer")
 
 	// var writers flags.WriterFlags

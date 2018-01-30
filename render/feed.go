@@ -1,7 +1,7 @@
 package render
 
 import (
-	"html/template"
+	"text/template"
 )
 
 type FeedOptions struct {
