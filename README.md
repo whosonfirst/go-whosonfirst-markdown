@@ -20,11 +20,75 @@ Everything is in flux, right now. Lots of things will change.
 
 ### wof-md2html
 
+```
+./bin/wof-md2html -h
+Usage of ./bin/wof-md2html:
+  -footer string
+    	The name of the (Go) template to use as a custom footer
+  -header string
+    	The name of the (Go) template to use as a custom header
+  -input string
+    	What you expect the input Markdown file to be called (default "index.md")
+  -mode string
+    	Valid modes are: files, directory (default "files")
+  -output string
+    	What you expect the output HTML file to be called (default "index.html")
+  -templates value
+    	One or more templates to parse in addition to -header and -footer
+  -writer value
+    	One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout
+```
+
 ### wof-md2idx
+
+```
+./bin/wof-md2idx -h
+Usage of ./bin/wof-md2idx:
+  -footer string
+    	The name of the (Go) template to use as a custom footer
+  -header string
+    	The name of the (Go) template to use as a custom header
+  -input string
+    	What you expect the input Markdown file to be called (default "index.md")
+  -output string
+    	What you expect the output HTML file to be called (default "index.html")
+  -templates value
+    	One or more templates to parse in addition to -header and -footer
+  -writer value
+    	One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout
+```
 
 ### wof-md2feed
 
+```
+./bin/wof-md2feed -h
+Usage of ./bin/wof-md2feed:
+  -format string
+    	Valid options are: atom_10, rss_20 (default "rss_20")
+  -input string
+    	What you expect the input Markdown file to be called (default "index.md")
+  -items int
+    	The number of items to include in your feed (default 10)
+  -output string
+    	The filename of your feed. If empty default to the value of -format + ".xml"
+  -templates value
+    	One or more directories containing (Go) templates to parse
+  -writer value
+    	One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout
+```
+
 ### wof-mdparse
+
+```
+./bin/wof-mdparse -h
+Usage of ./bin/wof-mdparse:
+  -all
+    	Dump both frontmatter and body
+  -body
+    	Dump (Markdown) body
+  -frontmatter
+    	Dump (Jekyll) frontmatter
+```
 
 ## See also
 
