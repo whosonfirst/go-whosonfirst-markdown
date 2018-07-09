@@ -6,6 +6,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
+	txt "text/template"	
 	"io"
 	"log"
 )
@@ -16,7 +17,9 @@ type HTMLOptions struct {
 	Output    string
 	Header    string
 	Footer    string
+	List      string
 	Templates *template.Template
+	MarkdownTemplates *txt.Template		  
 }
 
 func DefaultHTMLOptions() *HTMLOptions {
@@ -27,7 +30,9 @@ func DefaultHTMLOptions() *HTMLOptions {
 		Output:    "index.html",
 		Header:    "",
 		Footer:    "",
+		List:      "",
 		Templates: nil,
+		MarkdownTemplates: nil,			   
 	}
 
 	return &opts

@@ -117,3 +117,53 @@ func (t *FeedTemplateFlags) Parse() (*text_template.Template, error) {
 
 	return text_template.New("debug").Funcs(fns).ParseFiles(*t...)
 }
+
+type MarkdownTemplateFlags []string
+
+func (t *MarkdownTemplateFlags) String() string {
+	return fmt.Sprintf("%v", *t)
+}
+
+func (t *MarkdownTemplateFlags) Set(root string) error {
+
+	mu := new(sync.Mutex)
+
+	cb := func(path string, info os.FileInfo) error {
+
+		if info.IsDir() {
+			return nil
+		}
+
+		ext := filepath.Ext(path)
+
+		if ext != ".md" {
+			return nil
+		}
+
+		mu.Lock()
+		*t = append(*t, path)
+		mu.Unlock()
+
+		return nil
+	}
+
+	c := crawl.NewCrawler(root)
+	return c.Crawl(cb)
+}
+
+func (t *MarkdownTemplateFlags) Parse() (*text_template.Template, error) {
+
+	if len(*t) == 0 {
+		return nil, nil
+	}
+
+	// PLEASE RECONCILE THIS WITH ABOVE...
+
+	var fns = text_template.FuncMap{
+		"plus1": func(x int) int {
+			return x + 1
+		},
+	}
+
+	return text_template.New("debug").Funcs(fns).ParseFiles(*t...)
+}

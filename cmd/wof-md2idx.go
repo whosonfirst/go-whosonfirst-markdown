@@ -13,13 +13,13 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
+	"text/template"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
-	"text/template"
 )
 
 type nopCloser struct {
@@ -128,10 +128,8 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		return nil
 	default:
 
-		// PLEASE MOVE THIS SOMEWHERE ELSE
-
 		tm := `{{ range $fm := .Posts }}
-### [{{ $fm.Title }}]({{ $fm.Permalink }})
+### [{{ $fm.Title }}]({{ $fm.Permalink }}) WHAT
 
 > {{ $fm.Excerpt }}
 
@@ -146,17 +144,28 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 	    {{ end }}`
 
 		// THIS IS A DIRTY HACK JUST TO GET THINGS WORKING
+
 		var fns = template.FuncMap{
 			"plus1": func(x int) int {
 				return x + 1
 			},
 		}
 
-		t, err := template.New("index").Funcs(fns).Parse(tm)
+		t := opts.MarkdownTemplates.Lookup(opts.List)
 
-		if err != nil {
-			return err
+		if t == nil {
+
+			lv, err := template.New("index").Parse(tm)
+
+			if err != nil {
+				return err
+			}
+
+			t = lv
+
 		}
+
+		t = t.Funcs(fns)
 
 		type Data struct {
 			Posts []*jekyll.FrontMatter
@@ -169,7 +178,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		var b bytes.Buffer
 		wr := bufio.NewWriter(&b)
 
-		err = t.Execute(wr, d)
+		err := t.Execute(wr, d)
 
 		if err != nil {
 			return err
@@ -266,9 +275,13 @@ func main() {
 	var output = flag.String("output", "index.html", "What you expect the output HTML file to be called")
 	var header = flag.String("header", "", "The name of the (Go) template to use as a custom header")
 	var footer = flag.String("footer", "", "The name of the (Go) template to use as a custom footer")
+	var list = flag.String("list", "", "The name of the (Go) template to use as a custom list view")
 
 	var templates flags.HTMLTemplateFlags
 	flag.Var(&templates, "templates", "One or more directories containing (Go) templates to parse")
+
+	var md_templates flags.MarkdownTemplateFlags
+	flag.Var(&md_templates, "markdown-templates", "One or more directories containing (Go) Markdown templates to parse")
 
 	var writers flags.WriterFlags
 	flag.Var(&writers, "writer", "One or more writer to output rendered Markdown to. Valid writers are: fs=PATH; null; stdout")
@@ -287,13 +300,21 @@ func main() {
 		log.Fatal(err)
 	}
 
+	markdown_t, err := md_templates.Parse()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	opts := render.DefaultHTMLOptions()
 	opts.Input = *input
 	opts.Output = *output
 	opts.Header = *header
 	opts.Footer = *footer
+	opts.List = *list
 	opts.Templates = t
-
+	opts.MarkdownTemplates = markdown_t
+	
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "writer", wr)
 
