@@ -6,33 +6,33 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"gopkg.in/russross/blackfriday.v2"
 	"html/template"
-	txt "text/template"	
 	"io"
 	"log"
+	txt "text/template"
 )
 
 type HTMLOptions struct {
-	Mode      string
-	Input     string
-	Output    string
-	Header    string
-	Footer    string
-	List      string
-	Templates *template.Template
-	MarkdownTemplates *txt.Template		  
+	Mode              string
+	Input             string
+	Output            string
+	Header            string
+	Footer            string
+	List              string
+	Templates         *template.Template
+	MarkdownTemplates *txt.Template
 }
 
 func DefaultHTMLOptions() *HTMLOptions {
 
 	opts := HTMLOptions{
-		Mode:      "files",
-		Input:     "index.md",
-		Output:    "index.html",
-		Header:    "",
-		Footer:    "",
-		List:      "",
-		Templates: nil,
-		MarkdownTemplates: nil,			   
+		Mode:              "files",
+		Input:             "index.md",
+		Output:            "index.html",
+		Header:            "",
+		Footer:            "",
+		List:              "",
+		Templates:         nil,
+		MarkdownTemplates: nil,
 	}
 
 	return &opts

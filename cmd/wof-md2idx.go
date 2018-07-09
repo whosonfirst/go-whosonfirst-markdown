@@ -13,14 +13,36 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
-	"text/template"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"sync"
+	"text/template"
 )
+
+var default_index_list string
+
+func init() {
+
+	default_index_list = `{{ range $fm := .Posts }}
+### [{{ $fm.Title }}]({{ $fm.Permalink }}) WHAT
+
+> {{ $fm.Excerpt }}
+
+{{$lena := len $fm.Authors }}
+{{$lent := len $fm.Tags }}
+<small style="font-style:italic;display:block;margin-bottom:2em;">This is a blog post by
+{{ range $ia, $a := $fm.Authors }}{{ if gt $lena 1 }}{{if eq $ia 0}}{{else if eq (plus1 $ia) $lena}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $a }}</a>{{ end }}
+{{ if gt $lent 0 }} that is tagged {{ range $it, $t := .Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $t }}</a>{{ end }}.{{end}}
+{{ if $fm.Date }} It was published on <span class="pubdate"><a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/">{{ $fm.Date.Format "January" }}</a> <a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/{{ $fm.Date.Format "02" }}">{{ $fm.Date.Format "02"}}</a>, <a href="/blog/{{ $fm.Date.Year }}/">{{ $fm.Date.Format "2006" }}</a></span>.{{ end }}
+</small>
+
+	    {{ end }}`
+}
+
+// please get rid of this - it's built in to ioutil (20180709/thisisaaronland)
 
 type nopCloser struct {
 	io.Reader
@@ -128,21 +150,6 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		return nil
 	default:
 
-		tm := `{{ range $fm := .Posts }}
-### [{{ $fm.Title }}]({{ $fm.Permalink }}) WHAT
-
-> {{ $fm.Excerpt }}
-
-{{$lena := len $fm.Authors }}
-{{$lent := len $fm.Tags }}
-<small style="font-style:italic;display:block;margin-bottom:2em;">This is a blog post by
-{{ range $ia, $a := $fm.Authors }}{{ if gt $lena 1 }}{{if eq $ia 0}}{{else if eq (plus1 $ia) $lena}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $a }}</a>{{ end }}
-{{ if gt $lent 0 }} that is tagged {{ range $it, $t := .Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}<a href="#" class="hey-look">{{ $t }}</a>{{ end }}.{{end}}
-{{ if $fm.Date }} It was published on <span class="pubdate"><a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/">{{ $fm.Date.Format "January" }}</a> <a href="/blog/{{ $fm.Date.Year }}/{{ $fm.Date.Format "01" }}/{{ $fm.Date.Format "02" }}">{{ $fm.Date.Format "02"}}</a>, <a href="/blog/{{ $fm.Date.Year }}/">{{ $fm.Date.Format "2006" }}</a></span>.{{ end }}
-</small>
-
-	    {{ end }}`
-
 		// THIS IS A DIRTY HACK JUST TO GET THINGS WORKING
 
 		var fns = template.FuncMap{
@@ -155,14 +162,13 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 		if t == nil {
 
-			lv, err := template.New("index").Parse(tm)
+			tm, err := template.New("list").Parse(default_index_list)
 
 			if err != nil {
 				return err
 			}
 
-			t = lv
-
+			t = tm
 		}
 
 		t = t.Funcs(fns)
@@ -314,7 +320,7 @@ func main() {
 	opts.List = *list
 	opts.Templates = t
 	opts.MarkdownTemplates = markdown_t
-	
+
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "writer", wr)
 
