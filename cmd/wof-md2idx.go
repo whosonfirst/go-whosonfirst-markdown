@@ -150,14 +150,6 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		return nil
 	default:
 
-		// THIS IS A DIRTY HACK JUST TO GET THINGS WORKING
-
-		var fns = template.FuncMap{
-			"plus1": func(x int) int {
-				return x + 1
-			},
-		}
-
 		t := opts.MarkdownTemplates.Lookup(opts.List)
 
 		if t == nil {
@@ -170,8 +162,6 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 			t = tm
 		}
-
-		t = t.Funcs(fns)
 
 		type Data struct {
 			Posts []*jekyll.FrontMatter
