@@ -1693,7 +1693,7 @@ func TestTransportChecksResponseHeaderListSize(t *testing.T) {
 	ct.run()
 }
 
-// Test that the the Transport returns a typed error from Response.Body.Read calls
+// Test that the Transport returns a typed error from Response.Body.Read calls
 // when the server sends an error. (here we use a panic, since that should generate
 // a stream error, but others like cancel should be similar)
 func TestTransportBodyReadErrorType(t *testing.T) {
@@ -2024,12 +2024,22 @@ func TestTransportRejectsConnHeaders(t *testing.T) {
 		},
 		{
 			key:   "Connection",
+			value: []string{"CLoSe"},
+			want:  "Accept-Encoding,User-Agent",
+		},
+		{
+			key:   "Connection",
 			value: []string{"close", "something-else"},
 			want:  "ERROR: http2: invalid Connection request header: [\"close\" \"something-else\"]",
 		},
 		{
 			key:   "Connection",
 			value: []string{"keep-alive"},
+			want:  "Accept-Encoding,User-Agent",
+		},
+		{
+			key:   "Connection",
+			value: []string{"Keep-ALIVE"},
 			want:  "Accept-Encoding,User-Agent",
 		},
 		{
@@ -2394,11 +2404,12 @@ func TestTransportHandlerBodyClose(t *testing.T) {
 	}
 	tr.CloseIdleConnections()
 
-	gd := runtime.NumGoroutine() - g0
-	if gd > numReq/2 {
+	if !waitCondition(5*time.Second, 100*time.Millisecond, func() bool {
+		gd := runtime.NumGoroutine() - g0
+		return gd < numReq/2
+	}) {
 		t.Errorf("appeared to leak goroutines")
 	}
-
 }
 
 // https://golang.org/issue/15930
