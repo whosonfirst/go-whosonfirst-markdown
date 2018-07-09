@@ -50,11 +50,14 @@ type nopCloser struct {
 
 func (nopCloser) Close() error { return nil }
 
-func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) error {
+type MarkdownOptions struct {
+	MarkdownTemplates *template.Template
+	List              string
+}
 
-	// log.Println("RENDER", dir)
+func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
-	posts, err := GatherPosts(ctx, dir, opts)
+	posts, err := GatherPosts(ctx, dir, html_opts, md_opts)
 
 	if err != nil {
 		return err
@@ -64,10 +67,10 @@ func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) 
 		return nil
 	}
 
-	return RenderPosts(ctx, dir, posts, opts)
+	return RenderPosts(ctx, dir, posts, html_opts, md_opts)
 }
 
-func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]*jekyll.FrontMatter, error) {
+func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) ([]*jekyll.FrontMatter, error) {
 
 	mu := new(sync.Mutex)
 
@@ -83,11 +86,11 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 
 			if info.IsDir() && path != root {
 
-				i := filepath.Join(path, opts.Input)
+				i := filepath.Join(path, html_opts.Input)
 				_, err := os.Stat(i)
 
 				if os.IsNotExist(err) {
-					RenderDirectory(ctx, path, opts)
+					RenderDirectory(ctx, path, html_opts, md_opts)
 				}
 
 				return nil
@@ -99,11 +102,11 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 				return err
 			}
 
-			if filepath.Base(abs_path) != opts.Input {
+			if filepath.Base(abs_path) != html_opts.Input {
 				return nil
 			}
 
-			fm, err := RenderPath(ctx, path, opts)
+			fm, err := RenderPath(ctx, path, html_opts)
 
 			if err != nil {
 				return err
@@ -143,14 +146,14 @@ func GatherPosts(ctx context.Context, root string, opts *render.HTMLOptions) ([]
 	return posts, nil
 }
 
-func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, opts *render.HTMLOptions) error {
+func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
 	select {
 	case <-ctx.Done():
 		return nil
 	default:
 
-		t := opts.MarkdownTemplates.Lookup(opts.List)
+		t := md_opts.MarkdownTemplates.Lookup(md_opts.List)
 
 		if t == nil {
 
@@ -185,8 +188,8 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		r := bytes.NewReader(b.Bytes())
 		fh := nopCloser{r}
 
-		p_opts := parser.DefaultParseOptions()
-		fm, buf, err := parser.Parse(fh, p_opts)
+		parse_opts := parser.DefaultParseOptions()
+		fm, buf, err := parser.Parse(fh, parse_opts)
 
 		if err != nil {
 			log.Printf("FAILED to parse MD document, because %s\n", err)
@@ -200,7 +203,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 			return err
 		}
 
-		html, err := render.RenderHTML(doc, opts)
+		html, err := render.RenderHTML(doc, html_opts)
 
 		if err != nil {
 			log.Printf("FAILED to render HTML document, because %s\n", err)
@@ -213,7 +216,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 			return errors.New("Can't load writer from context")
 		}
 
-		out_path := filepath.Join(root, opts.Output)
+		out_path := filepath.Join(root, html_opts.Output)
 		return w.Write(out_path, html)
 	}
 }
@@ -221,7 +224,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 // THIS IS A BAD NAME - ALSO SHOULD BE SHARED CODE...
 // (20180130/thisisaaronland)
 
-func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
+func RenderPath(ctx context.Context, path string, html_opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
 
 	select {
 
@@ -236,7 +239,7 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 			return nil, err
 		}
 
-		if filepath.Base(abs_path) != opts.Input {
+		if filepath.Base(abs_path) != html_opts.Input {
 			return nil, nil
 		}
 
@@ -254,13 +257,13 @@ func RenderPath(ctx context.Context, path string, opts *render.HTMLOptions) (*je
 	}
 }
 
-func Render(ctx context.Context, path string, opts *render.HTMLOptions) error {
+func Render(ctx context.Context, path string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
 	select {
 	case <-ctx.Done():
 		return nil
 	default:
-		return RenderDirectory(ctx, path, opts)
+		return RenderDirectory(ctx, path, html_opts, md_opts)
 	}
 
 }
@@ -296,20 +299,23 @@ func main() {
 		log.Fatal(err)
 	}
 
+	html_opts := render.DefaultHTMLOptions()
+	html_opts.Input = *input
+	html_opts.Output = *output
+	html_opts.Header = *header
+	html_opts.Footer = *footer
+	html_opts.Templates = t
+
 	markdown_t, err := md_templates.Parse()
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	opts := render.DefaultHTMLOptions()
-	opts.Input = *input
-	opts.Output = *output
-	opts.Header = *header
-	opts.Footer = *footer
-	opts.List = *list
-	opts.Templates = t
-	opts.MarkdownTemplates = markdown_t
+	md_opts := &MarkdownOptions{
+		MarkdownTemplates: markdown_t,
+		List:              *list,
+	}
 
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, "writer", wr)
@@ -319,7 +325,7 @@ func main() {
 
 	for _, path := range flag.Args() {
 
-		err := Render(ctx, path, opts)
+		err := Render(ctx, path, html_opts, md_opts)
 
 		if err != nil {
 			log.Println(err)

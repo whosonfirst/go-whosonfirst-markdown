@@ -8,31 +8,28 @@ import (
 	"html/template"
 	"io"
 	"log"
-	txt "text/template"
 )
 
 type HTMLOptions struct {
-	Mode              string
-	Input             string
-	Output            string
-	Header            string
-	Footer            string
-	List              string
-	Templates         *template.Template
-	MarkdownTemplates *txt.Template
+	Mode      string
+	Input     string
+	Output    string
+	Header    string
+	Footer    string
+	List      string
+	Templates *template.Template
 }
 
 func DefaultHTMLOptions() *HTMLOptions {
 
 	opts := HTMLOptions{
-		Mode:              "files",
-		Input:             "index.md",
-		Output:            "index.html",
-		Header:            "",
-		Footer:            "",
-		List:              "",
-		Templates:         nil,
-		MarkdownTemplates: nil,
+		Mode:      "files",
+		Input:     "index.md",
+		Output:    "index.html",
+		Header:    "",
+		Footer:    "",
+		List:      "",
+		Templates: nil,
 	}
 
 	return &opts
