@@ -17,14 +17,21 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"text/template"
+	"time"
 )
+
+var re_ymd *regexp.Regexp
 
 var default_index_list string
 
 func init() {
+
+	re_ymd = regexp.MustCompile(".*(\\d{4})(?:/(\\d{2}))?(?:/(\\d{2}))?$")
 
 	default_index_list = `{{ range $fm := .Posts }}
 ### [{{ $fm.Title }}]({{ $fm.Permalink }}) WHAT
@@ -194,6 +201,41 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		if err != nil {
 			log.Printf("FAILED to parse MD document, because %s\n", err)
 			return err
+		}
+
+		if re_ymd.MatchString(root) {
+
+			matches := re_ymd.FindStringSubmatch(root)
+
+			str_yyyy := matches[1]
+			str_mm := matches[2]
+			str_dd := matches[3]
+
+			parse_string := make([]string, 0)
+			ymd_string := make([]string, 0)
+
+			if str_yyyy != "" {
+				parse_string = append(parse_string, "2006")
+				ymd_string = append(ymd_string, str_yyyy)
+			}
+
+			if str_mm != "" {
+				parse_string = append(parse_string, "01")
+				ymd_string = append(ymd_string, str_mm)
+			}
+
+			if str_dd != "" {
+				parse_string = append(parse_string, "02")
+				ymd_string = append(ymd_string, str_dd)
+			}
+
+			// Y U SO WEIRD GO...
+
+			dt, err := time.Parse(strings.Join(parse_string, "-"), strings.Join(ymd_string, "-"))
+
+			if err == nil {
+				fm.Date = &dt
+			}
 		}
 
 		doc, err := markdown.NewDocument(fm, buf)
