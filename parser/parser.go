@@ -154,11 +154,13 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 
 			if opts.FrontMatter {
 
-				kv := strings.Split(ln, ":")
+				kv := strings.SplitAfterN(ln, ":", 2)
 				key := strings.Trim(kv[0], " ")
+				key = strings.Trim(key, ":")
+				
 				value := strings.Trim(kv[1], " ")
 
-				// log.Println("FRONT MATTER", ln)
+				// log.Printf("FRONT MATTER '%s' '%s'\n", key, value)
 
 				switch key {
 				case "authors":
@@ -193,6 +195,7 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				case "title":
 					fm.Title = string2string(value)
 				default:
+					// log.Println("WHAT IS ", key)
 					// pass
 				}
 			}

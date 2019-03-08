@@ -5,3 +5,4 @@ src
 *.json
 bin/wof-*
 *.db
+dist
