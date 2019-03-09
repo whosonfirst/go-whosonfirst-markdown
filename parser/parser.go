@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -157,7 +158,7 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				kv := strings.SplitAfterN(ln, ":", 2)
 				key := strings.Trim(kv[0], " ")
 				key = strings.Trim(key, ":")
-				
+
 				value := strings.Trim(kv[1], " ")
 
 				// log.Printf("FRONT MATTER '%s' '%s'\n", key, value)
@@ -194,6 +195,24 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 					fm.Tags = string2list(value)
 				case "title":
 					fm.Title = string2string(value)
+				case "wof:ids":
+
+					str_ids := string2list(value)
+					ids := make([]int64, len(str_ids))
+
+					for i, str_id := range str_ids {
+
+						id, err := strconv.ParseInt(str_id, 10, 64)
+
+						if err != nil {
+							return nil, nil, err
+						}
+
+						ids[i] = id
+					}
+
+					fm.WOFIds = ids
+
 				default:
 					// log.Println("WHAT IS ", key)
 					// pass

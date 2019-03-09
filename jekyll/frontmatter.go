@@ -48,6 +48,7 @@ type FrontMatter struct {
 	Image   string
 	Authors []string
 	Tags    []string
+	WOFIds  []int64 // a list of WOF IDs
 }
 
 func (fm *FrontMatter) String() string {
