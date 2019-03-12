@@ -52,7 +52,7 @@ bin: 	rmdeps self
 	@GOPATH=$(shell pwd) go build -o bin/wof-md2feed cmd/wof-md2feed.go	
 	@GOPATH=$(shell pwd) go build -o bin/wof-md2html cmd/wof-md2html.go
 	@GOPATH=$(shell pwd) go build -o bin/wof-md2idx cmd/wof-md2idx.go
-	@GOPATH=$(shell pwd) go build -o bin/wof-md2idx cmd/wof-html2offline.go
+	@GOPATH=$(shell pwd) go build -o bin/wof-html2offline cmd/wof-html2offline.go
 
 dist-build:
 	OS=darwin make dist-os
