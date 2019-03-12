@@ -157,7 +157,7 @@ func Parse(md io.ReadCloser, opts *ParseOptions) (*jekyll.FrontMatter, *markdown
 				kv := strings.SplitAfterN(ln, ":", 2)
 				key := strings.Trim(kv[0], " ")
 				key = strings.Trim(key, ":")
-				
+
 				value := strings.Trim(kv[1], " ")
 
 				// log.Printf("FRONT MATTER '%s' '%s'\n", key, value)
