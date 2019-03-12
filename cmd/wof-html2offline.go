@@ -13,6 +13,7 @@ import (
 	"bufio"
 	"bytes"
 	"flag"
+	"fmt"
 	"github.com/facebookgo/atomicfile"
 	"golang.org/x/net/html"
 	"golang.org/x/net/html/atom"
@@ -21,6 +22,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -67,13 +69,16 @@ function fromNetwork(request, timeout) {
 function fromCache(request) {
   return caches.open(CACHE).then(function (cache) {
     return cache.match(request).then(function (matching) {
-      return matching || Promise.reject('no-match');
+      if (! matching){
+	return Promise.reject('no-match');
+      }
+      console.log("cache hit");
+      return matching;
     });
   });
 }`
 
 	sw_init = `window.addEventListener("load", function load(event){
-console.log('HELLO');
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('{{ .ServiceWorkerURL }}').then(function(registration) {
     console.log('Service worker registration succeeded:', registration);
@@ -88,20 +93,20 @@ if ('serviceWorker' in navigator) {
 }
 
 type ParseOptions struct {
-	CacheName string
+	CacheName        string
 	ServiceWorkerURL string
 }
 
 func DefaultParseOptions() *ParseOptions {
 
 	opts := ParseOptions{
-		CacheName: "network-or-cache",
+		CacheName:        "network-or-cache",
 		ServiceWorkerURL: "sw.js",
 	}
 
 	return &opts
 }
-	
+
 func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *ParseOptions) error {
 
 	sw_t, err := template.New("service-worker").Parse(sw)
@@ -131,7 +136,10 @@ func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *Pa
 		ServiceWorkerURL string
 	}
 
-	to_cache := make([]string, 0)
+	to_cache := []string{
+		"",
+		"index.html",
+	}
 
 	var callback func(node *html.Node, writer io.Writer)
 
@@ -158,15 +166,16 @@ func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *Pa
 				}
 
 				wr.Flush()
-				
+
 				script_type := html.Attribute{"", "type", "text/javascript"}
+				script_rel := html.Attribute{"", "x-service-worker", "true"}
 
 				script := html.Node{
 					Type:      html.ElementNode,
 					DataAtom:  atom.Script,
 					Data:      "script",
 					Namespace: "",
-					Attr:      []html.Attribute{script_type},
+					Attr:      []html.Attribute{script_type, script_rel},
 				}
 
 				body := html.Node{
@@ -221,6 +230,13 @@ func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *Pa
 
 	callback(doc, html_wr)
 
+	for idx, uri := range to_cache {
+
+		if !strings.HasPrefix(uri, "/") {
+			to_cache[idx] = fmt.Sprintf("./%s", uri)
+		}
+	}
+
 	vars := ServiceWorkerVars{
 		CacheName: opts.CacheName,
 		ToCache:   to_cache,
@@ -250,13 +266,13 @@ func main() {
 
 	cache_name := flag.String("cache-name", "network-or-cache", "...")
 	sw_url := flag.String("server-worker-url", "sw.js", "...")
-	
+
 	flag.Parse()
 
 	opts := DefaultParseOptions()
 	opts.CacheName = *cache_name
 	opts.ServiceWorkerURL = *sw_url
-	
+
 	for _, path := range flag.Args() {
 
 		html_path, err := filepath.Abs(path)
@@ -264,7 +280,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		
+
 		in, err := os.Open(html_path)
 
 		if err != nil {
@@ -281,12 +297,12 @@ func main() {
 		}
 
 		sw_out, err := atomicfile.New(sw_path, 0644)
-		
+
 		if err != nil {
 			html_out.Abort()
 			log.Fatal(err)
 		}
-		
+
 		err = Parse(in, html_out, sw_out, opts)
 
 		if err != nil {
@@ -296,7 +312,7 @@ func main() {
 		}
 
 		in.Close()
-		
+
 		html_out.Close()
 		sw_out.Close()
 	}
