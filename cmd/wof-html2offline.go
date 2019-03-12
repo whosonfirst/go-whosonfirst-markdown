@@ -78,7 +78,10 @@ function fromCache(request) {
   });
 }`
 
-	sw_init = `window.addEventListener("load", function load(event){
+	sw_init = `
+// this code was added by robots
+
+window.addEventListener("load", function load(event){
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('{{ .ServiceWorkerURL }}').then(function(registration) {
     console.log('Service worker registration succeeded:', registration);
@@ -151,6 +154,21 @@ func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *Pa
 
 			case "head":
 
+				for c := n.FirstChild; c != nil; c = c.NextSibling {
+
+					if c.Type != html.ElementNode || c.Data != "script" {
+						continue
+					}
+
+					script := attrs2map(c.Attr...)
+
+					_, ok := script["x-service-worker"]
+
+					if ok {
+						n.RemoveChild(c)
+					}
+				}
+
 				vars := ServiceWorkerInitVars{
 					ServiceWorkerURL: opts.ServiceWorkerURL,
 				}
@@ -215,6 +233,25 @@ func Parse(in io.Reader, html_wr io.Writer, serviceworker_wr io.Writer, opts *Pa
 				src, src_ok := script["src"]
 
 				if script_type_ok && src_ok && script_type == "text/javascript" {
+					to_cache = append(to_cache, src)
+				}
+
+			case "source":
+
+				// <picture> uses <source srcset="...">
+				// <video> uses <source src="...">
+
+				source := attrs2map(n.Attr...)
+
+				srcset, srcset_ok := source["srcset"]
+
+				if srcset_ok {
+					to_cache = append(to_cache, srcset)
+				}
+
+				src, src_ok := source["src"]
+
+				if src_ok {
 					to_cache = append(to_cache, src)
 				}
 
