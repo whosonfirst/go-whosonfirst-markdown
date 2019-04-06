@@ -52,6 +52,7 @@ func init() {
 type MarkdownOptions struct {
 	MarkdownTemplates *template.Template
 	List              string
+	Mode              string
 }
 
 func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
@@ -73,8 +74,7 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 
 	mu := new(sync.Mutex)
 
-	lookup := make(map[string]*jekyll.FrontMatter)
-	dates := make([]string, 0)
+	lookup := make(map[string][]*jekyll.FrontMatter)
 
 	cb := func(path string, info os.FileInfo) error {
 
@@ -82,46 +82,71 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 		case <-ctx.Done():
 			return nil
 		default:
-
-			if info.IsDir() && path != root {
-
-				i := filepath.Join(path, html_opts.Input)
-				_, err := os.Stat(i)
-
-				if os.IsNotExist(err) {
-					RenderDirectory(ctx, path, html_opts, md_opts)
-				}
-
-				return nil
-			}
-
-			abs_path, err := filepath.Abs(path)
-
-			if err != nil {
-				return err
-			}
-
-			if filepath.Base(abs_path) != html_opts.Input {
-				return nil
-			}
-
-			fm, err := RenderPath(ctx, path, html_opts)
-
-			if err != nil {
-				return err
-			}
-
-			if fm == nil {
-				return nil
-			}
-
-			mu.Lock()
-			ymd := fm.Date.Format("20060102")
-			dates = append(dates, ymd)
-			lookup[ymd] = fm
-			mu.Unlock()
+			// pass
 		}
 
+		if info.IsDir() && path != root {
+
+			i := filepath.Join(path, html_opts.Input)
+			_, err := os.Stat(i)
+
+			if os.IsNotExist(err) {
+				RenderDirectory(ctx, path, html_opts, md_opts)
+			}
+
+			return nil
+		}
+
+		abs_path, err := filepath.Abs(path)
+
+		if err != nil {
+			return err
+		}
+
+		if filepath.Base(abs_path) != html_opts.Input {
+			return nil
+		}
+
+		fm, err := FrontMatterForPath(ctx, path, html_opts)
+
+		if err != nil {
+			return err
+		}
+
+		if fm == nil {
+			return nil
+		}
+
+		var keys []string
+
+		switch md_opts.Mode {
+		case "author":
+			keys = fm.Authors
+		case "date":
+			ymd := fm.Date.Format("20060102")
+			keys = []string{ymd}
+		case "tags":
+			keys = fm.Tags
+		default:
+			return errors.New("Invalid or unsupported mode")
+		}
+
+		mu.Lock()
+
+		for _, k := range keys {
+
+			posts, ok := lookup[k]
+
+			if ok {
+				posts = append(posts, fm)
+				lookup[k] = posts
+			} else {
+				posts = []*jekyll.FrontMatter{fm}
+				lookup[k] = posts
+			}
+		}
+
+		mu.Unlock()
 		return nil
 	}
 
@@ -134,12 +159,21 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 		return nil, err
 	}
 
+	keys := make([]string, 0)
+
+	for k, _ := range lookup {
+		keys = append(keys, k)
+	}
+
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+
 	posts := make([]*jekyll.FrontMatter, 0)
 
-	sort.Sort(sort.Reverse(sort.StringSlice(dates)))
+	for _, k := range keys {
 
-	for _, ymd := range dates {
-		posts = append(posts, lookup[ymd])
+		for _, p := range lookup[k] {
+			posts = append(posts, p)
+		}
 	}
 
 	return posts, nil
@@ -259,36 +293,42 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 // (20180130/thisisaaronland)
 
 func RenderPath(ctx context.Context, path string, html_opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
+	log.Println("STOP CALLING RenderPath - PLEASE USE FrontMatterForPath instead")
+	return FrontMatterForPath(ctx, path, html_opts)
+}
+
+func FrontMatterForPath(ctx context.Context, path string, html_opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
 
 	select {
 
 	case <-ctx.Done():
 		return nil, nil
 	default:
-
-		abs_path, err := filepath.Abs(path)
-
-		if err != nil {
-			log.Printf("FAILED to render path %s, because %s\n", path, err)
-			return nil, err
-		}
-
-		if filepath.Base(abs_path) != html_opts.Input {
-			return nil, nil
-		}
-
-		parse_opts := parser.DefaultParseOptions()
-		parse_opts.Body = false
-
-		fm, _, err := parser.ParseFile(abs_path, parse_opts)
-
-		if err != nil {
-			log.Printf("FAILED to parse %s, because %s\n", path, err)
-			return nil, err
-		}
-
-		return fm, nil
+		// pass
 	}
+
+	abs_path, err := filepath.Abs(path)
+
+	if err != nil {
+		log.Printf("FAILED to render path %s, because %s\n", path, err)
+		return nil, err
+	}
+
+	if filepath.Base(abs_path) != html_opts.Input {
+		return nil, nil
+	}
+
+	parse_opts := parser.DefaultParseOptions()
+	parse_opts.Body = false
+
+	fm, _, err := parser.ParseFile(abs_path, parse_opts)
+
+	if err != nil {
+		log.Printf("FAILED to parse %s, because %s\n", path, err)
+		return nil, err
+	}
+
+	return fm, nil
 }
 
 func Render(ctx context.Context, path string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
@@ -297,9 +337,10 @@ func Render(ctx context.Context, path string, html_opts *render.HTMLOptions, md_
 	case <-ctx.Done():
 		return nil
 	default:
-		return RenderDirectory(ctx, path, html_opts, md_opts)
+		// pass
 	}
 
+	return RenderDirectory(ctx, path, html_opts, md_opts)
 }
 
 func main() {
@@ -309,6 +350,7 @@ func main() {
 	var header = flag.String("header", "", "The name of the (Go) template to use as a custom header")
 	var footer = flag.String("footer", "", "The name of the (Go) template to use as a custom footer")
 	var list = flag.String("list", "", "The name of the (Go) template to use as a custom list view")
+	var mode = flag.String("mode", "date", "...")
 
 	var templates flags.HTMLTemplateFlags
 	flag.Var(&templates, "templates", "One or more directories containing (Go) templates to parse")
@@ -349,6 +391,7 @@ func main() {
 	md_opts := &MarkdownOptions{
 		MarkdownTemplates: markdown_t,
 		List:              *list,
+		Mode:              *mode,
 	}
 
 	ctx := context.Background()
