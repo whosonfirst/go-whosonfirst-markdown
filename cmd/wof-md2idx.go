@@ -13,7 +13,7 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
-	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -48,14 +48,6 @@ func init() {
 
 	    {{ end }}`
 }
-
-// please get rid of this - it's built in to ioutil (20180709/thisisaaronland)
-
-type nopCloser struct {
-	io.Reader
-}
-
-func (nopCloser) Close() error { return nil }
 
 type MarkdownOptions struct {
 	MarkdownTemplates *template.Template
@@ -193,7 +185,7 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		wr.Flush()
 
 		r := bytes.NewReader(b.Bytes())
-		fh := nopCloser{r}
+		fh := ioutil.NopCloser(r)
 
 		parse_opts := parser.DefaultParseOptions()
 		fm, buf, err := parser.Parse(fh, parse_opts)
