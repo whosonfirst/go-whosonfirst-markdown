@@ -102,21 +102,21 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 	root := filepath.Join(dir, md_opts.Mode)
 
-	for _, k_raw := range keys {
+	for _, raw := range keys {
 
-		k_clean, err := uri.String(k_raw)
+		clean, err := uri.PruneString(raw)
 
 		if err != nil {
 			return err
 		}
 
-		if k_clean == "" {
+		if clean == "" {
 			continue
 		}
 
-		k_dir := filepath.Join(root, k_clean)
+		k_dir := filepath.Join(root, clean)
 
-		posts := lookup[k_raw]
+		posts := lookup[raw]
 
 		err = RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
 

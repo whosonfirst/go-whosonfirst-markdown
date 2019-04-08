@@ -5,15 +5,20 @@ import (
 	"golang.org/x/text/unicode/norm"
 )
 
-func String(raw string) (string, error) {
+func PruneString(raw string) (string, error) {
+
+	allowed := [][]int{
+		[]int{48, 57},  // (0-9)
+		[]int{65, 90},  // (A-Z)
+		[]int{97, 122}, // (a-z)
+	}
+
+	return PruneStringWithAllowed(raw, allowed)
+}
+
+func PruneStringWithAllowed(raw string, allowed [][]int) (string, error) {
 
 	rm_func := func(r rune) bool {
-
-		allowed := [][]int{
-			[]int{48, 57},  // (0-9)
-			[]int{65, 90},  // (A-Z)
-			[]int{97, 122}, // (a-z)
-		}
 
 		is_allowed := false
 
