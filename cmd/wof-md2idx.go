@@ -13,6 +13,8 @@ import (
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
 	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
 	"io/ioutil"
 	"log"
 	"os"
@@ -23,10 +25,7 @@ import (
 	"sync"
 	"text/template"
 	"time"
-
-	"golang.org/x/text/transform"
-	"golang.org/x/text/unicode/norm"
-	"unicode"
+	_ "unicode"
 )
 
 var re_ymd *regexp.Regexp
@@ -104,30 +103,52 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 	root := filepath.Join(dir, md_opts.Mode)
 
-	isMn := func(r rune) bool {
-		return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+	rm_func := func(r rune) bool {
+
+		allowed := [][]int{
+			[]int{48, 57},  // (0-9)
+			[]int{65, 90},  // (A-Z)
+			[]int{97, 122}, // (a-z)
+		}
+
+		is_allowed := false
+
+		for _, bookends := range allowed {
+
+			r_int := int(r)
+
+			if r_int >= bookends[0] && r_int <= bookends[1] {
+				is_allowed = true
+				break
+			}
+		}
+
+		if is_allowed {
+			return false
+		}
+
+		return true
 	}
 
-	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+	tr := transform.Chain(norm.NFD, transform.RemoveFunc(rm_func), norm.NFC)
 
-	for _, k := range keys {
+	for _, k_raw := range keys {
 
-		log.Println("K1 ", k)
+		k_clean, _, err := transform.String(tr, k_raw)
 
-		k, _, _ = transform.String(t, k)
+		if err != nil {
+			return err
+		}
 
-		log.Println("K2 ", k)
-
-		if k == "" {
+		if k_clean == "" {
 			continue
 		}
 
-		k_dir := filepath.Join(root, k)
+		k_dir := filepath.Join(root, k_clean)
 
-		// SORT POSTS BY DATE HERE...
+		posts := lookup[k_raw]
 
-		posts := lookup[k]
-		err := RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
+		err = RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
 
 		if err != nil {
 			return err
@@ -135,6 +156,8 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 	}
 
 	// MAKE INDEX PAGE HERE...
+
+	log.Println("MAKE INDEX PAGE FOR ", root)
 
 	return nil
 }
@@ -233,6 +256,34 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 
 	if err != nil {
 		return nil, err
+	}
+
+	// ensure that everything is sorted by date (reverse chronological)
+
+	for k, unsorted := range lookup {
+
+		count := len(unsorted)
+
+		by_date := make(map[string]*jekyll.FrontMatter)
+		dates := make([]string, count)
+
+		for idx, post := range unsorted {
+
+			dt := post.Date.Format(time.RFC3339)
+
+			by_date[dt] = post
+			dates[idx] = dt
+		}
+
+		sort.Sort(sort.Reverse(sort.StringSlice(dates)))
+
+		sorted := make([]*jekyll.FrontMatter, count)
+
+		for idx, dt := range dates {
+			sorted[idx] = by_date[dt]
+		}
+
+		lookup[k] = sorted
 	}
 
 	return lookup, nil
