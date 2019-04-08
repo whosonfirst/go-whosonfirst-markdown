@@ -57,20 +57,75 @@ type MarkdownOptions struct {
 
 func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
-	posts, err := GatherPosts(ctx, dir, html_opts, md_opts)
+	log.Println("RENDER DIR", dir)
+
+	lookup, err := GatherPosts(ctx, dir, html_opts, md_opts)
 
 	if err != nil {
 		return err
 	}
 
-	if len(posts) == 0 {
-		return nil
+	keys := make([]string, 0)
+
+	for k, _ := range lookup {
+		keys = append(keys, k)
 	}
 
-	return RenderPosts(ctx, dir, posts, html_opts, md_opts)
+	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
+
+	switch md_opts.Mode {
+	case "authors":
+		// pass, handled below
+	case "date":
+
+		posts := make([]*jekyll.FrontMatter, 0)
+
+		for _, k := range keys {
+
+			for _, p := range lookup[k] {
+				posts = append(posts, p)
+			}
+		}
+
+		if len(posts) == 0 {
+			return nil
+		}
+
+		return RenderPosts(ctx, dir, posts, html_opts, md_opts)
+
+	case "tags":
+		// pass, handled below
+	default:
+		return errors.New("Invalid or unsupported mode")
+	}
+
+	root := filepath.Join(dir, md_opts.Mode)
+
+	for _, k := range keys {
+
+		if k == "" {
+			continue
+		}
+
+		k_dir := filepath.Join(root, k)
+
+		log.Print("RENDER K ", k)
+		log.Print("RENDER PATH ", k_dir)
+
+		posts := lookup[k]
+		err := RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
+
+		if err != nil {
+			return err
+		}
+	}
+
+	// MAKE INDEX PAGE HERE...
+
+	return nil
 }
 
-func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) ([]*jekyll.FrontMatter, error) {
+func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) (map[string][]*jekyll.FrontMatter, error) {
 
 	mu := new(sync.Mutex)
 
@@ -87,11 +142,18 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 
 		if info.IsDir() && path != root {
 
-			i := filepath.Join(path, html_opts.Input)
-			_, err := os.Stat(i)
+			// SEE THIS? WE'RE "RECURSING"
 
-			if os.IsNotExist(err) {
-				RenderDirectory(ctx, path, html_opts, md_opts)
+			if md_opts.Mode == "date" {
+
+				log.Println("WOOP WOOP")
+
+				i := filepath.Join(path, html_opts.Input)
+				_, err := os.Stat(i)
+
+				if os.IsNotExist(err) {
+					RenderDirectory(ctx, path, html_opts, md_opts)
+				}
 			}
 
 			return nil
@@ -120,7 +182,7 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 		var keys []string
 
 		switch md_opts.Mode {
-		case "author":
+		case "authors":
 			keys = fm.Authors
 		case "date":
 			ymd := fm.Date.Format("20060102")
@@ -159,24 +221,7 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 		return nil, err
 	}
 
-	keys := make([]string, 0)
-
-	for k, _ := range lookup {
-		keys = append(keys, k)
-	}
-
-	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
-
-	posts := make([]*jekyll.FrontMatter, 0)
-
-	for _, k := range keys {
-
-		for _, p := range lookup[k] {
-			posts = append(posts, p)
-		}
-	}
-
-	return posts, nil
+	return lookup, nil
 }
 
 func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
@@ -185,116 +230,109 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 	case <-ctx.Done():
 		return nil
 	default:
-
-		t := md_opts.MarkdownTemplates.Lookup(md_opts.List)
-
-		if t == nil {
-
-			tm, err := template.New("list").Parse(default_index_list)
-
-			if err != nil {
-				return err
-			}
-
-			t = tm
-		}
-
-		type Data struct {
-			Posts []*jekyll.FrontMatter
-		}
-
-		d := Data{
-			Posts: posts,
-		}
-
-		var b bytes.Buffer
-		wr := bufio.NewWriter(&b)
-
-		err := t.Execute(wr, d)
-
-		if err != nil {
-			return err
-		}
-
-		wr.Flush()
-
-		r := bytes.NewReader(b.Bytes())
-		fh := ioutil.NopCloser(r)
-
-		parse_opts := parser.DefaultParseOptions()
-		fm, buf, err := parser.Parse(fh, parse_opts)
-
-		if err != nil {
-			log.Printf("FAILED to parse MD document, because %s\n", err)
-			return err
-		}
-
-		if re_ymd.MatchString(root) {
-
-			matches := re_ymd.FindStringSubmatch(root)
-
-			str_yyyy := matches[1]
-			str_mm := matches[2]
-			str_dd := matches[3]
-
-			parse_string := make([]string, 0)
-			ymd_string := make([]string, 0)
-
-			if str_yyyy != "" {
-				parse_string = append(parse_string, "2006")
-				ymd_string = append(ymd_string, str_yyyy)
-			}
-
-			if str_mm != "" {
-				parse_string = append(parse_string, "01")
-				ymd_string = append(ymd_string, str_mm)
-			}
-
-			if str_dd != "" {
-				parse_string = append(parse_string, "02")
-				ymd_string = append(ymd_string, str_dd)
-			}
-
-			// Y U SO WEIRD GO...
-
-			dt, err := time.Parse(strings.Join(parse_string, "-"), strings.Join(ymd_string, "-"))
-
-			if err == nil {
-				fm.Date = &dt
-			}
-		}
-
-		doc, err := markdown.NewDocument(fm, buf)
-
-		if err != nil {
-			log.Printf("FAILED to create MD document, because %s\n", err)
-			return err
-		}
-
-		html, err := render.RenderHTML(doc, html_opts)
-
-		if err != nil {
-			log.Printf("FAILED to render HTML document, because %s\n", err)
-			return err
-		}
-
-		w := ctx.Value("writer").(writer.Writer)
-
-		if w == nil {
-			return errors.New("Can't load writer from context")
-		}
-
-		out_path := filepath.Join(root, html_opts.Output)
-		return w.Write(out_path, html)
+		// pass
 	}
-}
 
-// THIS IS A BAD NAME - ALSO SHOULD BE SHARED CODE...
-// (20180130/thisisaaronland)
+	t := md_opts.MarkdownTemplates.Lookup(md_opts.List)
 
-func RenderPath(ctx context.Context, path string, html_opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
-	log.Println("STOP CALLING RenderPath - PLEASE USE FrontMatterForPath instead")
-	return FrontMatterForPath(ctx, path, html_opts)
+	if t == nil {
+
+		tm, err := template.New("list").Parse(default_index_list)
+
+		if err != nil {
+			return err
+		}
+
+		t = tm
+	}
+
+	type Data struct {
+		Posts []*jekyll.FrontMatter
+	}
+
+	d := Data{
+		Posts: posts,
+	}
+
+	var b bytes.Buffer
+	wr := bufio.NewWriter(&b)
+
+	err := t.Execute(wr, d)
+
+	if err != nil {
+		return err
+	}
+
+	wr.Flush()
+
+	r := bytes.NewReader(b.Bytes())
+	fh := ioutil.NopCloser(r)
+
+	parse_opts := parser.DefaultParseOptions()
+	fm, buf, err := parser.Parse(fh, parse_opts)
+
+	if err != nil {
+		log.Printf("FAILED to parse MD document, because %s\n", err)
+		return err
+	}
+
+	if re_ymd.MatchString(root) {
+
+		matches := re_ymd.FindStringSubmatch(root)
+
+		str_yyyy := matches[1]
+		str_mm := matches[2]
+		str_dd := matches[3]
+
+		parse_string := make([]string, 0)
+		ymd_string := make([]string, 0)
+
+		if str_yyyy != "" {
+			parse_string = append(parse_string, "2006")
+			ymd_string = append(ymd_string, str_yyyy)
+		}
+
+		if str_mm != "" {
+			parse_string = append(parse_string, "01")
+			ymd_string = append(ymd_string, str_mm)
+		}
+
+		if str_dd != "" {
+			parse_string = append(parse_string, "02")
+			ymd_string = append(ymd_string, str_dd)
+		}
+
+		// Y U SO WEIRD GO...
+
+		dt, err := time.Parse(strings.Join(parse_string, "-"), strings.Join(ymd_string, "-"))
+
+		if err == nil {
+			fm.Date = &dt
+		}
+	}
+
+	doc, err := markdown.NewDocument(fm, buf)
+
+	if err != nil {
+		log.Printf("FAILED to create MD document, because %s\n", err)
+		return err
+	}
+
+	html, err := render.RenderHTML(doc, html_opts)
+
+	if err != nil {
+		log.Printf("FAILED to render HTML document, because %s\n", err)
+		return err
+	}
+
+	w := ctx.Value("writer").(writer.Writer)
+
+	if w == nil {
+		return errors.New("Can't load writer from context")
+	}
+
+	out_path := filepath.Join(root, html_opts.Output)
+	return w.Write(out_path, html)
 }
 
 func FrontMatterForPath(ctx context.Context, path string, html_opts *render.HTMLOptions) (*jekyll.FrontMatter, error) {
