@@ -17,6 +17,7 @@ type HTMLOptions struct {
 	Header    string
 	Footer    string
 	List      string
+	Title     string
 	Templates *template.Template
 }
 

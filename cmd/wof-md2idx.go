@@ -114,6 +114,8 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 			continue
 		}
 
+		// html_opts.Title = raw
+
 		k_dir := filepath.Join(root, clean)
 
 		posts := lookup[raw]
