@@ -23,6 +23,10 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"golang.org/x/text/transform"
+	"golang.org/x/text/unicode/norm"
+	"unicode"
 )
 
 var re_ymd *regexp.Regexp
@@ -57,8 +61,6 @@ type MarkdownOptions struct {
 
 func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
-	log.Println("RENDER DIR", dir)
-
 	lookup, err := GatherPosts(ctx, dir, html_opts, md_opts)
 
 	if err != nil {
@@ -73,10 +75,7 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 	sort.Sort(sort.Reverse(sort.StringSlice(keys)))
 
-	switch md_opts.Mode {
-	case "authors":
-		// pass, handled below
-	case "date":
+	if md_opts.Mode == "date" {
 
 		posts := make([]*jekyll.FrontMatter, 0)
 
@@ -92,7 +91,11 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 		}
 
 		return RenderPosts(ctx, dir, posts, html_opts, md_opts)
+	}
 
+	switch md_opts.Mode {
+	case "authors":
+		// pass, handled below
 	case "tags":
 		// pass, handled below
 	default:
@@ -101,7 +104,19 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 	root := filepath.Join(dir, md_opts.Mode)
 
+	isMn := func(r rune) bool {
+		return unicode.Is(unicode.Mn, r) // Mn: nonspacing marks
+	}
+
+	t := transform.Chain(norm.NFD, transform.RemoveFunc(isMn), norm.NFC)
+
 	for _, k := range keys {
+
+		log.Println("K1 ", k)
+
+		k, _, _ = transform.String(t, k)
+
+		log.Println("K2 ", k)
 
 		if k == "" {
 			continue
@@ -109,8 +124,7 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 		k_dir := filepath.Join(root, k)
 
-		log.Print("RENDER K ", k)
-		log.Print("RENDER PATH ", k_dir)
+		// SORT POSTS BY DATE HERE...
 
 		posts := lookup[k]
 		err := RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
