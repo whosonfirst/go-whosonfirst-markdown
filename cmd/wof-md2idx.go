@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
@@ -96,14 +97,18 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 			return nil
 		}
 
-		return RenderPosts(ctx, dir, posts, html_opts, md_opts)
+		title := "" // where is date...
+
+		return RenderPosts(ctx, dir, title, posts, html_opts, md_opts)
 	}
+
+	var title_layout string
 
 	switch md_opts.Mode {
 	case "authors":
-		// pass, handled below
+		title_layout = "Posts written by %s"
 	case "tags":
-		// pass, handled below
+		title_layout = "Posts tagged \"%s\""
 	default:
 		return errors.New("Invalid or unsupported mode")
 	}
@@ -126,9 +131,10 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 		k_dir := filepath.Join(root, clean)
 
+		title := fmt.Sprintf(title_layout, raw)
 		posts := lookup[raw]
 
-		err = RenderPosts(ctx, k_dir, posts, html_opts, md_opts)
+		err = RenderPosts(ctx, k_dir, title, posts, html_opts, md_opts)
 
 		if err != nil {
 			return err
@@ -263,7 +269,9 @@ func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions
 	return lookup, nil
 }
 
-func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
+// see notes below about passing a struct for post details
+
+func RenderPosts(ctx context.Context, root string, title string, posts []*jekyll.FrontMatter, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
 
 	select {
 	case <-ctx.Done():
@@ -289,11 +297,18 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		t = tm
 	}
 
+	// maybe just pass this to RenderPosts?
+	// (20190409/thisisaaronland)
+
 	type Data struct {
+		Mode  string
+		Title string
 		Posts []*jekyll.FrontMatter
 	}
 
 	d := Data{
+		Mode:  md_opts.Mode,
+		Title: title,
 		Posts: posts,
 	}
 
@@ -407,10 +422,12 @@ func RenderRollup(ctx context.Context, root string, rollup []string, html_opts *
 	sort.Sort(sort.StringSlice(rollup))
 
 	type Data struct {
+		Mode   string
 		Rollup []string
 	}
 
 	d := Data{
+		Mode:   md_opts.Mode,
 		Rollup: rollup,
 	}
 
@@ -420,9 +437,12 @@ func RenderRollup(ctx context.Context, root string, rollup []string, html_opts *
 	err := t.Execute(wr, d)
 
 	if err != nil {
-		log.Println("OH NO", err)
+		log.Println("NO", err)
+		log.Println(d)
 		return err
 	}
+
+	log.Println("D", d)
 
 	wr.Flush()
 
@@ -514,6 +534,7 @@ func main() {
 	var header = flag.String("header", "", "The name of the (Go) template to use as a custom header")
 	var footer = flag.String("footer", "", "The name of the (Go) template to use as a custom footer")
 	var list = flag.String("list", "", "The name of the (Go) template to use as a custom list view")
+	var rollup = flag.String("rollup", "", "The name of the (Go) template to use as a custom rollup view (for things like tags and authors)")
 	var mode = flag.String("mode", "date", "...")
 
 	var templates flags.HTMLTemplateFlags
@@ -555,6 +576,7 @@ func main() {
 	md_opts := &MarkdownOptions{
 		MarkdownTemplates: markdown_t,
 		List:              *list,
+		Rollup:            *rollup,
 		Mode:              *mode,
 	}
 
