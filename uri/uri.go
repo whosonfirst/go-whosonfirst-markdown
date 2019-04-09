@@ -3,6 +3,7 @@ package uri
 import (
 	"golang.org/x/text/transform"
 	"golang.org/x/text/unicode/norm"
+	"strings"
 )
 
 func PruneString(raw string) (string, error) {
@@ -13,7 +14,13 @@ func PruneString(raw string) (string, error) {
 		[]int{97, 122}, // (a-z)
 	}
 
-	return PruneStringWithAllowed(raw, allowed)
+	clean, err := PruneStringWithAllowed(raw, allowed)
+
+	if err != nil {
+		return "", err
+	}
+
+	return strings.ToLower(clean), nil
 }
 
 func PruneStringWithAllowed(raw string, allowed [][]int) (string, error) {

@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
@@ -102,13 +101,11 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 		return RenderPosts(ctx, dir, title, posts, html_opts, md_opts)
 	}
 
-	var title_layout string
-
 	switch md_opts.Mode {
 	case "authors":
-		title_layout = "Posts written by %s"
+		// pass
 	case "tags":
-		title_layout = "Posts tagged \"%s\""
+		// pass
 	default:
 		return errors.New("Invalid or unsupported mode")
 	}
@@ -131,7 +128,7 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 
 		k_dir := filepath.Join(root, clean)
 
-		title := fmt.Sprintf(title_layout, raw)
+		title := raw
 		posts := lookup[raw]
 
 		err = RenderPosts(ctx, k_dir, title, posts, html_opts, md_opts)
@@ -437,12 +434,8 @@ func RenderRollup(ctx context.Context, root string, rollup []string, html_opts *
 	err := t.Execute(wr, d)
 
 	if err != nil {
-		log.Println("NO", err)
-		log.Println(d)
 		return err
 	}
-
-	log.Println("D", d)
 
 	wr.Flush()
 
