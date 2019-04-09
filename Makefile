@@ -13,6 +13,7 @@ self:   prep
 	cp -r render src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r search src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r writer src/github.com/whosonfirst/go-whosonfirst-markdown/
+	cp -r uri src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp *.go src/github.com/whosonfirst/go-whosonfirst-markdown/
 	cp -r vendor/* src/
 
@@ -26,6 +27,8 @@ deps:
 	@GOPATH=$(GOPATH) go get -u "gopkg.in/russross/blackfriday.v2"
 	@GOPATH=$(GOPATH) go get -u "github.com/djherbis/times"
 	@GOPATH=$(GOPATH) go get -u "github.com/facebookgo/atomicfile"
+	@GOPATH=$(GOPATH) go get -u "golang.org/x/text/transform"
+	@GOPATH=$(GOPATH) go get -u "golang.org/x/text/unicode/norm"
 	@GOPATH=$(GOPATH) go get -u "github.com/whosonfirst/go-whosonfirst-crawl"
 
 vendor-deps: rmdeps deps
@@ -43,6 +46,7 @@ fmt:
 	go fmt render/*.go
 	go fmt search/*.go
 	go fmt writer/*.go
+	go fmt uri/*.go
 	go fmt *.go
 
 bin: 	rmdeps self

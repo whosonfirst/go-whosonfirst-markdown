@@ -3,6 +3,7 @@ package flags
 import (
 	"fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown/uri"
 	html_template "html/template"
 	_ "log"
 	"os"
@@ -59,6 +60,7 @@ func (t *HTMLTemplateFlags) Parse() (*html_template.Template, error) {
 		"plus1": func(x int) int {
 			return x + 1
 		},
+		"prune_string": uri.PruneString,
 	}
 
 	// we need something attach Funcs() to before we call
@@ -163,6 +165,7 @@ func (t *MarkdownTemplateFlags) Parse() (*text_template.Template, error) {
 		"plus1": func(x int) int {
 			return x + 1
 		},
+		"prune_string": uri.PruneString,
 	}
 
 	return text_template.New("debug").Funcs(fns).ParseFiles(*t...)
