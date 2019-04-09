@@ -30,13 +30,18 @@ import (
 var re_ymd *regexp.Regexp
 
 var default_index_list string
+var default_index_rollup string
 
 func init() {
 
 	re_ymd = regexp.MustCompile(".*(\\d{4})(?:/(\\d{2}))?(?:/(\\d{2}))?$")
 
+	default_index_rollup = `{{ range $w := .Rollup}}
+* [ {{ $w }} ]( {{ prune_string $w }} )
+{{ end }}`
+
 	default_index_list = `{{ range $fm := .Posts }}
-### [{{ $fm.Title }}]({{ $fm.Permalink }}) WHAT
+### [{{ $fm.Title }}]({{ $fm.Permalink }}) 
 
 > {{ $fm.Excerpt }}
 
@@ -56,6 +61,7 @@ func init() {
 type MarkdownOptions struct {
 	MarkdownTemplates *template.Template
 	List              string
+	Rollup            string
 	Mode              string
 }
 
@@ -129,11 +135,7 @@ func RenderDirectory(ctx context.Context, dir string, html_opts *render.HTMLOpti
 		}
 	}
 
-	// MAKE INDEX PAGE HERE...
-
-	log.Println("MAKE INDEX PAGE FOR ", root)
-
-	return nil
+	return RenderRollup(ctx, root, keys, html_opts, md_opts)
 }
 
 func GatherPosts(ctx context.Context, root string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) (map[string][]*jekyll.FrontMatter, error) {
@@ -274,7 +276,11 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 
 	if t == nil {
 
-		tm, err := template.New("list").Parse(default_index_list)
+		func_map := template.FuncMap{
+			"prune_string": uri.PruneString,
+		}
+
+		tm, err := template.New("list").Funcs(func_map).Parse(default_index_list)
 
 		if err != nil {
 			return err
@@ -346,6 +352,89 @@ func RenderPosts(ctx context.Context, root string, posts []*jekyll.FrontMatter, 
 		if err == nil {
 			fm.Date = &dt
 		}
+	}
+
+	doc, err := markdown.NewDocument(fm, buf)
+
+	if err != nil {
+		log.Printf("FAILED to create MD document, because %s\n", err)
+		return err
+	}
+
+	html, err := render.RenderHTML(doc, html_opts)
+
+	if err != nil {
+		log.Printf("FAILED to render HTML document, because %s\n", err)
+		return err
+	}
+
+	w := ctx.Value("writer").(writer.Writer)
+
+	if w == nil {
+		return errors.New("Can't load writer from context")
+	}
+
+	out_path := filepath.Join(root, html_opts.Output)
+	return w.Write(out_path, html)
+}
+
+func RenderRollup(ctx context.Context, root string, rollup []string, html_opts *render.HTMLOptions, md_opts *MarkdownOptions) error {
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+		// pass
+	}
+
+	t := md_opts.MarkdownTemplates.Lookup(md_opts.Rollup)
+
+	if t == nil {
+
+		func_map := template.FuncMap{
+			"prune_string": uri.PruneString,
+		}
+
+		tm, err := template.New("rollup").Funcs(func_map).Parse(default_index_rollup)
+
+		if err != nil {
+			return err
+		}
+
+		t = tm
+	}
+
+	sort.Sort(sort.StringSlice(rollup))
+
+	type Data struct {
+		Rollup []string
+	}
+
+	d := Data{
+		Rollup: rollup,
+	}
+
+	var b bytes.Buffer
+	wr := bufio.NewWriter(&b)
+
+	err := t.Execute(wr, d)
+
+	if err != nil {
+		log.Println("OH NO", err)
+		return err
+	}
+
+	wr.Flush()
+
+	r := bytes.NewReader(b.Bytes())
+	fh := ioutil.NopCloser(r)
+
+	parse_opts := parser.DefaultParseOptions()
+	fm, buf, err := parser.Parse(fh, parse_opts)
+
+	if err != nil {
+		log.Printf("FAILED to parse MD document, because %s\n", err)
+		return err
 	}
 
 	doc, err := markdown.NewDocument(fm, buf)
