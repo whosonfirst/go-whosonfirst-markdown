@@ -60,6 +60,7 @@ func (t *HTMLTemplateFlags) Parse() (*html_template.Template, error) {
 		"plus1": func(x int) int {
 			return x + 1
 		},
+		"prune_string": uri.PruneString,
 	}
 
 	// we need something attach Funcs() to before we call
