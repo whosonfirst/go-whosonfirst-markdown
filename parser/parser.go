@@ -226,8 +226,12 @@ func string2list(s string) []string {
 	l := make([]string, 0)
 
 	for _, str := range strings.Split(s, ",") {
+
 		str = strings.Trim(str, " ")
-		l = append(l, str)
+
+		if str != "" {
+			l = append(l, str)
+		}
 	}
 
 	return l
