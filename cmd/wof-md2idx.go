@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"flag"
+	_ "fmt"
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
@@ -54,7 +55,6 @@ func init() {
     It was tagged {{ range $it, $t := $fm.Tags }}{{ if gt $lent 1 }}{{if eq $it 0}}{{else if eq (plus1 $it) $lent}} and {{else}}, {{end}}{{ end }}[{{ $t }}](/blog/tags/{{ prune_string $t  }}){{ end }}.
     {{ end }}
 </small>
-{{ end }}
 {{ end }}`
 }
 
@@ -277,12 +277,19 @@ func RenderPosts(ctx context.Context, root string, title string, posts []*jekyll
 		// pass
 	}
 
-	t := md_opts.MarkdownTemplates.Lookup(md_opts.List)
+	var t *template.Template
+
+	if md_opts.List != "" {
+		t = md_opts.MarkdownTemplates.Lookup(md_opts.List)
+	}
 
 	if t == nil {
 
 		func_map := template.FuncMap{
 			"prune_string": uri.PruneString,
+			"plus1": func(x int) int {
+				return x + 1
+			},
 		}
 
 		tm, err := template.New("list").Funcs(func_map).Parse(default_index_list)
@@ -399,12 +406,19 @@ func RenderRollup(ctx context.Context, root string, rollup []string, html_opts *
 		// pass
 	}
 
-	t := md_opts.MarkdownTemplates.Lookup(md_opts.Rollup)
+	var t *template.Template
+
+	if md_opts.Rollup != "" {
+		t = md_opts.MarkdownTemplates.Lookup(md_opts.Rollup)
+	}
 
 	if t == nil {
 
 		func_map := template.FuncMap{
 			"prune_string": uri.PruneString,
+			"plus1": func(x int) int {
+				return x + 1
+			},
 		}
 
 		tm, err := template.New("rollup").Funcs(func_map).Parse(default_index_rollup)
