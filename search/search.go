@@ -2,7 +2,8 @@ package search
 
 import (
 	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"gopkg.in/russross/blackfriday.v2"
+	// "gopkg.in/russross/blackfriday.v2"
+	"github.com/russross/blackfriday"
 	"io"
 	"log"
 	"net/url"
