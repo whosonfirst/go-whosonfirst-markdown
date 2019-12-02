@@ -2,10 +2,9 @@ package render
 
 import (
 	"bytes"
+	"github.com/russross/blackfriday"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
-	// "gopkg.in/russross/blackfriday.v2"
-	"github.com/russross/blackfriday"
 	"html/template"
 	"io"
 	"log"
