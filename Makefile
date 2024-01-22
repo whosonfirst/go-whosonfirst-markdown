@@ -9,7 +9,7 @@ tools:
 	go build -mod $(GOMOD) -ldflags="$(LDFLAGS)" -o bin/wof-md2idx cmd/wof-md2idx/main.go
 
 dist-build:
-	OS=darwin make dist-os
+	# OS=darwin make dist-os
 	OS=windows make dist-os
 	OS=linux make dist-os
 
