@@ -2,12 +2,14 @@ package render
 
 import (
 	"bytes"
-	"github.com/russross/blackfriday"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"html/template"
 	"io"
 	"log"
+
+	"github.com/russross/blackfriday"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
+	
 )
 
 type HTMLOptions struct {

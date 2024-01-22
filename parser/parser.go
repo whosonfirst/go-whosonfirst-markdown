@@ -4,9 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/djherbis/times"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 	"io"
 	_ "log"
 	"os"
@@ -14,6 +11,10 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/djherbis/times"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"	
 )
 
 type ParseOptions struct {

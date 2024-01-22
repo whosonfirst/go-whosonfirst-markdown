@@ -7,12 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
-	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
-	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
-	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"io"
 	"log"
 	"os"
@@ -20,6 +14,14 @@ import (
 	"sort"
 	"sync"
 	"time"
+
+	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
+	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
+	"github.com/whosonfirst/go-whosonfirst-markdown/render"
+	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
+	
 )
 
 type nopCloser struct {

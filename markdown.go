@@ -3,6 +3,7 @@ package markdown
 import (
 	"bytes"
 	"fmt"
+	
 	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
 )
 

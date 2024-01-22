@@ -1,3 +1,4 @@
+github.com/MichaelTJones/walk v0.0.0-20161122175330-4748e29d5718 h1:FSsoaa1q4jAaeiAUxf9H0PgFP7eA/UL6c3PdJH+nMN4=
 github.com/MichaelTJones/walk v0.0.0-20161122175330-4748e29d5718/go.mod h1:VVwKsx9Dc8rNG55BWqogoJzGubjKnRoXdUvpGbWqeCc=
 github.com/djherbis/times v1.2.0 h1:xANXjsC/iBqbO00vkWlYwPWgBgEVU6m6AFYg0Pic+Mc=
 github.com/djherbis/times v1.2.0/go.mod h1:CGMZlo255K5r4Yw0b9RRfFQpM2y7uOmxg4jm9HsaVf8=
@@ -7,6 +8,7 @@ github.com/russross/blackfriday v2.0.0+incompatible h1:cBXrhZNUf9C+La9/YpS+UHpUT
 github.com/russross/blackfriday v2.0.0+incompatible/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/shurcooL/sanitized_anchor_name v1.0.0 h1:PdmoCO6wvbs+7yrJyMORt4/BmY5IYyJwS/kOiWx8mHo=
 github.com/shurcooL/sanitized_anchor_name v1.0.0/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
+github.com/whosonfirst/go-whosonfirst-crawl v0.2.0 h1:Ti39C2TYIO3SP6GFdyObfEGdYYy8Pdhm3reVE7JMkmQ=
 github.com/whosonfirst/go-whosonfirst-crawl v0.2.0/go.mod h1:0t0OFAJ3MpllNw7hI5TpS+wJtx13nzM/DBLYUKJDJu0=
 github.com/whosonfirst/walk v0.0.0-20160803014805-c0a349674b73 h1:/43peH8y6Wg+dAgQ97swaPN8c3/M6hi8lawr1vDblzs=
 github.com/whosonfirst/walk v0.0.0-20160803014805-c0a349674b73/go.mod h1:U/1VXxlMzNZbyylg18AzEeHkGi1RXiBCMKpaM2XR+tQ=

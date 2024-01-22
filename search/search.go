@@ -1,13 +1,14 @@
 package search
 
 import (
-	"github.com/russross/blackfriday"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"io"
 	"log"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/russross/blackfriday"
+	"github.com/whosonfirst/go-whosonfirst-markdown"	
 )
 
 type Indexer interface {

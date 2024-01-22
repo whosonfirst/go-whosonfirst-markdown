@@ -3,8 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"log"
+
+	"github.com/whosonfirst/go-whosonfirst-markdown/parser"	
 )
 
 func main() {
