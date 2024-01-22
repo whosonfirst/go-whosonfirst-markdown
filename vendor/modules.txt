@@ -1,15 +1,19 @@
 # github.com/djherbis/times v1.2.0
+## explicit
 github.com/djherbis/times
 # github.com/facebookgo/atomicfile v0.0.0-20151019160806-2de1f203e7d5
+## explicit
 github.com/facebookgo/atomicfile
-# github.com/russross/blackfriday v2.0.0+incompatible
-github.com/russross/blackfriday
-# github.com/shurcooL/sanitized_anchor_name v1.0.0
-github.com/shurcooL/sanitized_anchor_name
+# github.com/russross/blackfriday/v2 v2.1.0
+## explicit
+github.com/russross/blackfriday/v2
 # github.com/whosonfirst/go-whosonfirst-crawl v0.2.0
+## explicit; go 1.12
 github.com/whosonfirst/go-whosonfirst-crawl
 # github.com/whosonfirst/walk v0.0.0-20160803014805-c0a349674b73
+## explicit
 github.com/whosonfirst/walk
 # golang.org/x/text v0.3.2
+## explicit
 golang.org/x/text/transform
 golang.org/x/text/unicode/norm

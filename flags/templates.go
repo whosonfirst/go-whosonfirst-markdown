@@ -2,14 +2,15 @@ package flags
 
 import (
 	"fmt"
-	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"github.com/whosonfirst/go-whosonfirst-markdown/uri"
 	html_template "html/template"
 	_ "log"
 	"os"
 	"path/filepath"
 	"sync"
 	text_template "text/template"
+
+	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown/uri"	
 )
 
 type HTMLTemplateFlags []string

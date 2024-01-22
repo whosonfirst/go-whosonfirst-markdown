@@ -7,14 +7,6 @@ import (
 	"errors"
 	"flag"
 	_ "fmt"
-	"github.com/whosonfirst/go-whosonfirst-crawl"
-	"github.com/whosonfirst/go-whosonfirst-markdown"
-	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
-	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
-	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
-	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"github.com/whosonfirst/go-whosonfirst-markdown/uri"
-	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
 	"io/ioutil"
 	"log"
 	"os"
@@ -26,6 +18,16 @@ import (
 	"text/template"
 	"time"
 	_ "unicode"
+
+	"github.com/whosonfirst/go-whosonfirst-crawl"
+	"github.com/whosonfirst/go-whosonfirst-markdown"
+	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
+	"github.com/whosonfirst/go-whosonfirst-markdown/jekyll"
+	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
+	"github.com/whosonfirst/go-whosonfirst-markdown/render"
+	"github.com/whosonfirst/go-whosonfirst-markdown/uri"
+	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
+	
 )
 
 var re_ymd *regexp.Regexp

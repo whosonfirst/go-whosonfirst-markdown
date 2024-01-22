@@ -4,16 +4,17 @@ import (
 	"context"
 	"errors"
 	"flag"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/whosonfirst/go-whosonfirst-crawl"
 	"github.com/whosonfirst/go-whosonfirst-markdown"
 	"github.com/whosonfirst/go-whosonfirst-markdown/flags"
 	"github.com/whosonfirst/go-whosonfirst-markdown/parser"
 	"github.com/whosonfirst/go-whosonfirst-markdown/render"
-	"github.com/whosonfirst/go-whosonfirst-markdown/writer"
-	"log"
-	"os"
-	"path/filepath"
-	"strings"
+	"github.com/whosonfirst/go-whosonfirst-markdown/writer"	
 )
 
 func RenderDirectory(ctx context.Context, dir string, opts *render.HTMLOptions) error {

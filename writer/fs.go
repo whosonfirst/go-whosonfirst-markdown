@@ -1,11 +1,12 @@
 package writer
 
 import (
-	"github.com/facebookgo/atomicfile"
 	"io"
 	_ "log"
 	"os"
 	"path/filepath"
+
+	"github.com/facebookgo/atomicfile"	
 )
 
 type FSWriter struct {
