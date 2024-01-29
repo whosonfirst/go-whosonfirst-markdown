@@ -2,6 +2,10 @@
 
 There are many Markdown tools. This one is ours.
 
+## Important
+
+This package has been deprecated and will no longer be updated. It has been superseded by [whosonfirst/go-blog](https://github.com/whosonfirst/go-blog).
+
 ## Install
 
 You will need to have both `Go` (specifically version [Go 1.12](https://golang.org/dl/) or higher) and the `make` programs installed on your computer. Assuming you do just type:
